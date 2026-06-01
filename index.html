@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EnglishPro AI | Premium Grammar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #090A0F; -webkit-tap-highlight-color: transparent; user-select: none; overflow-x: hidden;}
+        .neon-border { border: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 0 15px rgba(6, 182, 212, 0.05); }
+        .glass-morphic { background: rgba(22, 25, 37, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .word-btn { transition: all 0.2s; }
+        .word-btn:active { transform: scale(0.95); }
+        
+        /* Premium Word Search Styles */
+        #ws-grid { position: relative; touch-action: none; z-index: 10;}
+        .ws-cell { 
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; border-radius: 6px; font-size: 14px; color: #cbd5e1;
+            transition: color 0.2s; z-index: 10; position: relative; cursor: pointer;
+        }
+        @media (max-width: 400px) { .ws-cell { width: 28px; height: 28px; font-size: 13px; } }
+        
+        /* Premium Curved Line (Capsule Shape) - FRONT */
+        #ws-selection-line {
+            position: absolute; pointer-events: none; z-index: 20; 
+            border-radius: 9999px; 
+            transition: opacity 0.2s;
+        }
+        
+        /* Solved Word Highlighter Base Class - FRONT */
+        .ws-highlight-base {
+            position: absolute; pointer-events: none; z-index: 20;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0 overflow-x-hidden" onload="initStats()">
+
+    <!-- Toast Notification -->
+    <div id="toast-msg" class="fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[100] transition-opacity duration-300 opacity-0 pointer-events-none">
+        Message
+    </div>
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="w-64 glass-morphic hidden md:flex flex-col justify-between p-6 border-r border-slate-800 z-10">
+        <div>
+            <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-10">
+                <i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>EnglishPro
+            </h1>
+            <nav class="space-y-3">
+                <button onclick="switchTab('dashboard')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/30 font-medium transition" id="desk-dashboard">
+                    <i class="fa-solid fa-house-chimney w-6 text-lg"></i> Dashboard
+                </button>
+                <button onclick="switchTab('ai-tutor')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-ai-tutor">
+                    <i class="fa-solid fa-robot w-6 text-lg"></i> AI Guru
+                </button>
+                <button onclick="switchTab('games')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-games">
+                    <i class="fa-solid fa-gamepad w-6 text-lg"></i> Arcade Games
+                </button>
+            </nav>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-2xl border border-slate-800">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center font-bold text-black shadow-lg shadow-cyan-500/20">S</div>
+            <div>
+                <p class="text-sm font-semibold">Student</p>
+                <p class="text-xs text-slate-400">Intermediate Level</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MOBILE TOP BAR -->
+    <header class="md:hidden w-full glass-morphic px-5 py-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-900">
+        <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
+            <i class="fa-solid fa-bolt text-cyan-400 mr-1"></i>EnglishPro
+        </h1>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 p-4 md:p-8 relative max-w-md mx-auto w-full md:max-w-none overflow-y-auto">
+        <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+        <div class="absolute bottom-10 right-0 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <section id="dashboard" class="tab-content block space-y-6 relative z-10">
+            <div class="bg-gradient-to-r from-purple-900/40 via-slate-900/80 to-cyan-900/40 p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+                
+                <!-- Welcome Section with BUY HINT Button -->
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">Welcome! ✨</h2>
+                        <p class="text-xs text-slate-400">Complete challenges to earn XP.</p>
+                    </div>
+                    <!-- Buy Hint Button -->
+                    <button onclick="buyHint()" class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-xl flex flex-col items-center justify-center active:scale-95 transition shadow-lg whitespace-nowrap">
+                        <span class="text-xs font-bold"><i class="fa-solid fa-cart-shopping mr-1"></i>Buy Hint</span>
+                        <span class="text-[9px] opacity-80 mt-0.5">-200 🪙</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-3 mt-5">
+                    <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
+                        <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">XP Points</span>
+                        <span id="dash-xp" class="text-lg font-bold text-cyan-400">0</span>
+                    </div>
+                    <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
+                        <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Streak</span>
+                        <span id="dash-streak" class="text-lg font-bold text-amber-400">0 🔥</span>
+                    </div>
+                    <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
+                        <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Coins</span>
+                        <span id="dash-coins" class="text-lg font-bold text-yellow-400 whitespace-nowrap block">0 🪙</span>
+                    </div>
+                </div>
+                
+                <!-- Display Global Hints on Dashboard -->
+                <div class="mt-3 text-center">
+                    <p class="text-[10px] text-slate-400">Available Hints: <span id="dash-hints" class="text-amber-400 font-bold">3 💡</span></p>
+                </div>
+            </div>
+
+            <div class="glass-morphic p-5 rounded-3xl neon-border">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <span class="bg-cyan-500/10 text-cyan-400 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full tracking-wider border border-cyan-500/20">Daily Challenge</span>
+                        <h3 class="text-lg font-bold mt-2">Play Arcade Games</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Test your Medium-level Grammar & Vocab</p>
+                    </div>
+                    <div class="text-3xl">🎮</div>
+                </div>
+                <button onclick="switchTab('games')" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-sm text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition mt-2">
+                    Open Games Arcade
+                </button>
+            </div>
+
+            <!-- LEARNING SECTION -->
+            <div class="mt-8">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-blue-400"></i> Learning Topics
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div onclick="showLearning('gender')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-pink-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-pink-500/10 to-transparent">
+                        <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex justify-center items-center text-xl"><i class="fa-solid fa-venus-mars"></i></div>
+                        <div><h3 class="font-bold text-sm text-pink-400">Gender</h3><p class="text-[9px] text-slate-400 mt-1">Medium-Hard Words</p></div>
+                    </div>
+                    <div onclick="showLearning('plural')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-emerald-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-emerald-500/10 to-transparent">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-clone"></i></div>
+                        <div><h3 class="font-bold text-sm text-emerald-400">Singular & Plural</h3><p class="text-[9px] text-slate-400 mt-1">Advanced Rules</p></div>
+                    </div>
+                    <div onclick="showLearning('collective')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-amber-500/10 to-transparent">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-users"></i></div>
+                        <div><h3 class="font-bold text-sm text-amber-400">Collective Nouns</h3><p class="text-[9px] text-slate-400 mt-1">Unique Groups</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: STATIC LEARNING CONTENT -->
+        <section id="learning-section" class="tab-content hidden relative z-10">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="closeLearning()" class="text-xs bg-slate-800 px-4 py-2.5 rounded-xl hover:bg-slate-700 transition flex items-center gap-1.5 shrink-0">
+                    <i class="fa-solid fa-arrow-left"></i> <span class="font-bold">Back to Home</span>
+                </button>
+            </div>
+            
+            <div class="glass-morphic p-4 md:p-6 rounded-3xl border border-slate-800 relative">
+                <h2 id="learn-title" class="text-2xl font-bold text-cyan-400 mb-1">Title</h2>
+                <p id="learn-desc" class="text-xs text-slate-400 mb-4">Desc</p>
+                <div id="learn-content" class="w-full"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: AI TUTOR -->
+        <section id="ai-tutor" class="tab-content hidden flex flex-col h-[65vh] md:h-[78vh] relative z-10">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h2 class="text-xl font-bold">AI Guru 🤖</h2>
+                    <p class="text-[11px] text-slate-400">Ask any grammar definition & types.</p>
+                </div>
+                <button onclick="clearChat()" class="text-xs text-slate-500 hover:text-slate-300"><i class="fa-solid fa-trash-can"></i> Clear</button>
+            </div>
+            
+            <div class="flex-1 bg-slate-900/40 rounded-3xl border border-slate-800/80 p-4 flex flex-col overflow-hidden relative">
+                <div id="chat-stream" class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+                    <div class="flex gap-2.5 items-start">
+                        <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div>
+                        <div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 leading-relaxed">
+                            Namaste! Main aapka AI Guru hu. Ab mujhe poori Grammar aati hai! Aap kisi bhi topic ki <strong>Definition aur Types</strong> pooch sakte hain. Jaise: <br><br>👉 Noun, Verb, Adjective<br>👉 Preposition, Conjunction<br>👉 Tense (Present/Past/Future)<br>👉 Simple Past Tense<br>👉 Active Passive
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex gap-2 pt-2 bg-slate-950/20">
+                    <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <button onclick="triggerChatAction()" class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center font-bold text-black active:scale-95 transition flex-shrink-0">
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: GAMES ARCADE -->
+        <section id="games" class="tab-content hidden relative z-10">
+            <div id="games-menu">
+                <h2 class="text-2xl font-bold mb-4">Games Arcade 🕹️</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div onclick="initGame('mcq')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-cyan-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex justify-center items-center text-xl"><i class="fa-solid fa-list-check"></i></div>
+                        <div><h3 class="font-bold text-sm">Grammar Battle</h3><p class="text-[9px] text-slate-400">MCQ Quiz</p></div>
+                    </div>
+                    <div onclick="initGame('jumble')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-purple-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex justify-center items-center text-xl"><i class="fa-solid fa-puzzle-piece"></i></div>
+                        <div><h3 class="font-bold text-sm">Word Jumble</h3><p class="text-[9px] text-slate-400">Sentence Building</p></div>
+                    </div>
+                    <div onclick="initGame('type')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-emerald-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-keyboard"></i></div>
+                        <div><h3 class="font-bold text-sm">Type Answer</h3><p class="text-[9px] text-slate-400">Fill in blanks</p></div>
+                    </div>
+                    <div onclick="initGame('match')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-link"></i></div>
+                        <div><h3 class="font-bold text-sm">Tense Matcher</h3><p class="text-[9px] text-slate-400">All 12 Tenses</p></div>
+                    </div>
+                    
+                    <div onclick="initGame('crossword')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-pink-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-pink-500/10 to-transparent">
+                        <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex justify-center items-center text-xl"><i class="fa-solid fa-spell-check"></i></div>
+                        <div>
+                            <h3 class="font-bold text-sm text-pink-400">Cross Word</h3>
+                            <p class="text-[9px] text-slate-400">Lvl <span id="cw-lvl-badge">1</span></p>
+                        </div>
+                    </div>
+
+                    <div onclick="initGame('wordsearch')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-indigo-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-bl from-indigo-500/10 to-transparent">
+                        <div class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex justify-center items-center text-xl"><i class="fa-solid fa-magnifying-glass"></i></div>
+                        <div>
+                            <h3 class="font-bold text-sm text-indigo-400">Word Search</h3>
+                            <p class="text-[9px] text-slate-400">Lvl <span id="ws-lvl-badge">1</span>/50</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Playing Arena -->
+            <div id="game-arena" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="quitGame()" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                    
+                    <button id="hint-btn" onclick="useHint()" class="bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                        <span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span>
+                        <span id="hint-count" class="text-xs font-black text-amber-300">3</span>
+                    </button>
+
+                    <div class="bg-purple-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-purple-500/20">
+                        <span class="text-[10px] text-purple-400 font-bold uppercase hidden md:inline">Score:</span>
+                        <span id="arena-score" class="text-xs font-black text-purple-300">0</span>
+                    </div>
+                </div>
+
+                <div class="glass-morphic p-4 md:p-6 rounded-3xl border border-slate-800 relative text-center">
+                    <div class="mb-4">
+                        <span id="arena-tag" class="px-2.5 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-md text-[10px] font-bold border border-cyan-500/20">Question 1/5</span>
+                    </div>
+                    
+                    <h3 id="arena-question" class="text-lg font-semibold min-h-[40px] flex items-center justify-center flex-col text-slate-100 px-2 mb-4">Loading...</h3>
+
+                    <div id="arena-options" class="w-full"></div>
+                    
+                    <div id="arena-alert" class="mt-4 p-3 rounded-xl text-sm font-medium hidden mx-auto w-full max-w-sm"></div>
+
+                    <div class="w-full max-w-sm mx-auto">
+                        <button id="arena-next-btn" onclick="nextGameLevel()" class="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-xs rounded-xl active:scale-95 transition hidden">
+                            Next <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-3 py-2.5 z-50 px-2">
+        <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-dashboard">
+            <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[10px] font-medium">Home</span>
+        </button>
+        <button onclick="switchTab('ai-tutor')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-ai-tutor">
+            <i class="fa-solid fa-robot text-lg"></i><span class="text-[10px] font-medium">AI Guru</span>
+        </button>
+        <button onclick="switchTab('games')" class="nav-btn-mob flex flex-col items-center gap-1 text-cyan-400" id="mob-games">
+            <i class="fa-solid fa-gamepad text-lg"></i><span class="text-[10px] font-semibold">Arcade</span>
+        </button>
+    </nav>
+
+    <!-- SYSTEM SCRIPT -->
+    <script>
+        let xpPoints = 0, userCoins = 0, streakDays = 0;
+        let cwCurrentLevel = 1, wsCurrentLevel = 1;
+        
+        // --- GLOBAL HINT SYSTEM ---
+        let remainingHints = 3; 
+
+        // Premium Palette
+        const wsColors = [
+            { bg: 'rgba(236, 72, 153, 0.4)', border: '#ec4899' }, 
+            { bg: 'rgba(6, 182, 212, 0.4)', border: '#06b6d4' },  
+            { bg: 'rgba(168, 85, 247, 0.4)', border: '#a855f7' }, 
+            { bg: 'rgba(16, 185, 129, 0.4)', border: '#10b981' }, 
+            { bg: 'rgba(245, 158, 11, 0.4)', border: '#f59e0b' }, 
+            { bg: 'rgba(239, 68, 68, 0.4)', border: '#ef4444' }   
+        ];
+
+        // --- TOAST NOTIFICATION ---
+        function showToast(msg, isSuccess) {
+            let toast = document.getElementById('toast-msg');
+            toast.innerText = msg;
+            toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[100] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+        }
+
+        // --- BUY HINT LOGIC ---
+        function buyHint() {
+            const cost = 200;
+            if(userCoins >= cost) {
+                userCoins -= cost;
+                remainingHints++;
+                localStorage.setItem('ep_coins', userCoins);
+                localStorage.setItem('ep_global_hints', remainingHints);
+                refreshDashboardUI();
+                showToast(`Hint Purchased! (+1 💡)`, true);
+                
+                // If in game, update hint button
+                if(!document.getElementById('game-arena').classList.contains('hidden')) {
+                    let hBtn = document.getElementById('hint-btn');
+                    hBtn.disabled = false;
+                    hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                    hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+                }
+            } else {
+                showToast(`Not enough Coins! Need 200 🪙`, false);
+            }
+        }
+
+        function initStats() {
+            xpPoints = parseInt(localStorage.getItem('ep_xp')) || 0;
+            userCoins = parseInt(localStorage.getItem('ep_coins')) || 0;
+            
+            // Initialize Global Hints safely
+            let savedHints = localStorage.getItem('ep_global_hints');
+            if(savedHints !== null && !isNaN(savedHints)) {
+                remainingHints = parseInt(savedHints);
+            } else {
+                remainingHints = 3;
+                localStorage.setItem('ep_global_hints', 3);
+            }
+
+            cwCurrentLevel = parseInt(localStorage.getItem('ep_cw_lvl')) || 1;
+            document.getElementById('cw-lvl-badge').innerText = cwCurrentLevel;
+            
+            if (!localStorage.getItem('ep_ws_save_fix_v4')) {
+                localStorage.setItem('ep_ws_save_fix_v4', '1');
+                localStorage.removeItem('ep_ws_data');
+                localStorage.removeItem('ep_ws_grid');
+                localStorage.removeItem('ep_ws_found');
+            }
+
+            wsCurrentLevel = parseInt(localStorage.getItem('ep_ws_lvl')) || 1;
+            document.getElementById('ws-lvl-badge').innerText = wsCurrentLevel;
+            
+            streakDays = parseInt(localStorage.getItem('ep_streak')) || 0;
+            let lastVisit = localStorage.getItem('ep_last_visit');
+            let today = new Date().toDateString();
+
+            if (lastVisit !== today) {
+                if(lastVisit) {
+                    let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                    if (lastVisit === yesterday.toDateString()) streakDays += 1;
+                    else streakDays = 1;
+                } else streakDays = 1;
+                localStorage.setItem('ep_last_visit', today);
+                localStorage.setItem('ep_streak', streakDays);
+            }
+            refreshDashboardUI();
+        }
+
+        function refreshDashboardUI() {
+            if(document.getElementById('dash-xp')) document.getElementById('dash-xp').innerText = xpPoints;
+            if(document.getElementById('dash-coins')) document.getElementById('dash-coins').innerText = userCoins + " 🪙";
+            if(document.getElementById('dash-streak')) document.getElementById('dash-streak').innerText = streakDays + " 🔥";
+            if(document.getElementById('dash-hints')) document.getElementById('dash-hints').innerText = remainingHints + " 💡";
+            
+            localStorage.setItem('ep_xp', xpPoints);
+            localStorage.setItem('ep_coins', userCoins);
+            localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
+            localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn-desk').forEach(b => b.className = "nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50");
+            if(document.getElementById('desk-' + tabId)) document.getElementById('desk-' + tabId).className = "nav-btn-desk w-full flex items-center p-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/30 font-medium transition";
+
+            document.querySelectorAll('.nav-btn-mob').forEach(b => b.className = "nav-btn-mob flex flex-col items-center gap-1 text-slate-500");
+            if(document.getElementById('mob-' + tabId)) document.getElementById('mob-' + tabId).className = "nav-btn-mob flex flex-col items-center gap-1 text-cyan-400";
+
+            if (tabId === 'games') quitGame(); 
+            if (tabId === 'dashboard') {
+                document.getElementById('learning-section').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+            }
+            
+            // Refresh dashboard explicitly to sync hint counts
+            refreshDashboardUI();
+        }
+
+        const learningData = {
+            'gender': {
+                title: 'Gender (Masculine & Feminine)',
+                desc: 'Intermediate and Advanced Gender pairs:',
+                table: [
+                    ['Masculine (Male)', 'Feminine (Female)'],
+                    ['Stallion (Horse)', 'Mare'],
+                    ['Gander (Goose)', 'Goose'],
+                    ['Duke', 'Duchess'],
+                    ['Wizard', 'Witch'],
+                    ['Emperor', 'Empress'],
+                    ['Monk', 'Nun'],
+                    ['Drake (Duck)', 'Duck'],
+                    ['Fox', 'Vixen'],
+                    ['Ram (Sheep)', 'Ewe'],
+                    ['Rooster', 'Hen'],
+                    ['Nephew', 'Niece'],
+                    ['Hero', 'Heroine'],
+                    ['Host', 'Hostess'],
+                    ['Bachelor', 'Spinster']
+                ]
+            },
+            'plural': {
+                title: 'Advanced Singular & Plural',
+                desc: 'Learn irregular and tricky plural nouns:',
+                table: [
+                    ['Singular (One)', 'Plural (Many)'],
+                    ['Syllabus', 'Syllabi'],
+                    ['Cactus', 'Cacti'],
+                    ['Criterion', 'Criteria'],
+                    ['Datum', 'Data'],
+                    ['Analysis', 'Analyses'],
+                    ['Oasis', 'Oases'],
+                    ['Fungus', 'Fungi'],
+                    ['Nucleus', 'Nuclei'],
+                    ['Phenomenon', 'Phenomena'],
+                    ['Index', 'Indices'],
+                    ['Thief', 'Thieves'],
+                    ['Goose', 'Geese'],
+                    ['Person', 'People'],
+                    ['Crisis', 'Crises']
+                ]
+            },
+            'collective': {
+                title: 'Unique Collective Nouns',
+                desc: 'Advanced group words for animals and things:',
+                table: [
+                    ['Group Description', 'Collective Noun Phrase'],
+                    ['A group of crows', 'A Murder of crows'],
+                    ['A group of owls', 'A Parliament of owls'],
+                    ['A group of geese', 'A Gaggle of geese'],
+                    ['A group of tigers', 'An Ambush of tigers'],
+                    ['A group of bears', 'A Sleuth of bears'],
+                    ['A group of hippos', 'A Bloat of hippos'],
+                    ['A group of cheetahs', 'A Coalition of cheetahs'],
+                    ['A group of parrots', 'A Pandemonium of parrots'],
+                    ['A group of jellyfish', 'A Smack of jellyfish'],
+                    ['A group of rhinos', 'A Crash of rhinos'],
+                    ['A group of frogs', 'An Army of frogs'],
+                    ['A group of wolves', 'A Pack of wolves']
+                ]
+            }
+        };
+
+        function showLearning(topic) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById('learning-section').classList.remove('hidden');
+            const data = learningData[topic];
+            document.getElementById('learn-title').innerText = data.title;
+            document.getElementById('learn-desc').innerText = data.desc;
+            let html = '<div class="grid grid-cols-2 gap-0 border border-slate-700 rounded-xl overflow-hidden mt-4 text-[11px] md:text-sm text-left">';
+            data.table.forEach((row, idx) => {
+                let bgClass = idx === 0 ? 'bg-indigo-600/40 font-bold text-cyan-300' : 'bg-slate-800/50 border-t border-slate-700 text-slate-200';
+                html += `<div class="p-3 ${bgClass} border-r border-slate-700">${row[0]}</div>`;
+                html += `<div class="p-3 ${bgClass}">${row[1]}</div>`;
+            });
+            html += '</div>';
+            document.getElementById('learn-content').innerHTML = html;
+        }
+
+        function closeLearning() { switchTab('dashboard'); }
+
+        const aiKnowledge = {
+            "noun": "<strong>Noun (Sangya):</strong> Kisi bhi person, place, animal, idea, ya thing ke naam ko Noun kehte hain.<br><br><strong>Types:</strong><br>1. <u>Proper Noun:</u> Specific name (Rahul, Delhi).<br>2. <u>Common Noun:</u> General name (Boy, City).<br>3. <u>Collective Noun:</u> Group (Team, Army).<br>4. <u>Abstract Noun:</u> Feelings/Ideas (Honesty, Love).<br>5. <u>Material Noun:</u> Substance (Gold, Water).",
+            "pronoun": "<strong>Pronoun (Sarvnam):</strong> Noun ki jagah use hone wale words.<br><br><strong>Types:</strong><br>1. <u>Personal:</u> I, You, He, She, They.<br>2. <u>Reflexive:</u> Myself, Himself.<br>3. <u>Demonstrative:</u> This, That, These, Those.<br>4. <u>Relative:</u> Who, Which, That.<br>5. <u>Interrogative:</u> Who, What, Whom.",
+            "verb": "<strong>Verb (Kriya):</strong> Action ya state batane wale words.<br><br><strong>Types:</strong><br>1. <u>Action:</u> Run, Eat.<br>2. <u>Helping:</u> Is, Am, Are.<br>3. <u>Modal:</u> Can, Should.<br>4. <u>Transitive:</u> Needs object (He ate an apple).<br>5. <u>Intransitive:</u> No object (She smiled).",
+            "adjective": "<strong>Adjective (Visheshan):</strong> Noun/Pronoun ki quality batate hain.<br><br><strong>Types:</strong><br>1. <u>Descriptive:</u> Brave, Beautiful.<br>2. <u>Quantitative:</u> Some, Much.<br>3. <u>Demonstrative:</u> This, That.<br>4. <u>Possessive:</u> My, His.",
+            "adverb": "<strong>Adverb (Kriya Visheshan):</strong> Verb, Adjective ya Adverb ki khasiyat bataye.<br><br><strong>Types:</strong><br>1. <u>Time:</u> Yesterday, Now.<br>2. <u>Place:</u> Here, Everywhere.<br>3. <u>Manner:</u> Slowly, Quickly.<br>4. <u>Degree:</u> Very, Too.",
+            "preposition": "<strong>Preposition:</strong> Noun/Pronoun ka relation batate hain.<br><br><strong>Types:</strong><br>1. <u>Time:</u> In, On, At.<br>2. <u>Place:</u> Under, Over, Inside.<br>3. <u>Direction:</u> To, Into, Towards.",
+            "conjunction": "<strong>Conjunction (Samuchyabodhak):</strong> Sentences/words ko jodne wale words.<br><br><strong>Types:</strong><br>1. <u>Coordinating:</u> And, But, Or.<br>2. <u>Subordinating:</u> Because, Although, If.",
+            "interjection": "<strong>Interjection:</strong> Sudden feelings express karte hain.<br><br><strong>Examples:</strong> Wow!, Alas!, Ouch!, Hurray!",
+            "tense": "<strong>Tense (Kaal):</strong> Time of action. 3 main types: Present, Past, Future. Har ek ke 4 subtypes: Simple, Continuous, Perfect, Perfect Continuous.",
+            "simple present": "<strong>Simple Present Tense:</strong> Daily habits/universal truth.<br><em>Rule:</em> Sub + V1(s/es) + Obj.<br><em>Ex:</em> He plays cricket.",
+            "present continuous": "<strong>Present Continuous Tense:</strong> Jo abhi chal raha hai.<br><em>Rule:</em> Sub + is/am/are + V1+ing + Obj.<br><em>Ex:</em> He is playing.",
+            "present perfect": "<strong>Present Perfect Tense:</strong> Jo abhi-abhi khatam hua.<br><em>Rule:</em> Sub + has/have + V3 + Obj.<br><em>Ex:</em> He has played.",
+            "present perfect continuous": "<strong>Present Perfect Continuous Tense:</strong> Pehle shuru hua aur abhi tak chal raha hai.<br><em>Rule:</em> Sub + has/have been + V1+ing + since/for.<br><em>Ex:</em> He has been playing since morning.",
+            "simple past": "<strong>Simple Past Tense:</strong> Jo bhootkaal me ho gaya.<br><em>Rule:</em> Sub + V2 + Obj.<br><em>Ex:</em> He played.",
+            "past continuous": "<strong>Past Continuous Tense:</strong> Paast me chal raha tha.<br><em>Rule:</em> Sub + was/were + V1+ing.<br><em>Ex:</em> He was playing.",
+            "past perfect": "<strong>Past Perfect Tense:</strong> Paast me kisi aur kaam se pehle khatam ho gaya tha.<br><em>Rule:</em> Sub + had + V3.<br><em>Ex:</em> He had played.",
+            "past perfect continuous": "<strong>Past Perfect Continuous Tense:</strong> Paast me lamba chala.<br><em>Rule:</em> Sub + had been + V1+ing.<br><em>Ex:</em> He had been playing.",
+            "simple future": "<strong>Simple Future Tense:</strong> Jo aage hoga.<br><em>Rule:</em> Sub + will/shall + V1.<br><em>Ex:</em> He will play.",
+            "future continuous": "<strong>Future Continuous Tense:</strong> Future me chal raha hoga.<br><em>Rule:</em> Sub + will be + V1+ing.<br><em>Ex:</em> He will be playing.",
+            "future perfect": "<strong>Future Perfect Tense:</strong> Future me khatam ho chuka hoga.<br><em>Rule:</em> Sub + will have + V3.<br><em>Ex:</em> He will have played.",
+            "future perfect continuous": "<strong>Future Perfect Continuous Tense:</strong> Future me kisi time tak chal raha hoga.<br><em>Rule:</em> Sub + will have been + V1+ing.<br><em>Ex:</em> He will have been playing.",
+            "active passive": "<strong>Active/Passive Voice:</strong><br>1. <u>Active:</u> Subject acts. (He writes a letter)<br>2. <u>Passive:</u> Object receives action. (A letter is written by him).",
+            "direct indirect": "<strong>Direct/Indirect Speech:</strong><br>1. <u>Direct:</u> Exact words. (He said, \"I go\")<br>2. <u>Indirect:</u> Reported. (He said that he went).",
+            "hello": "Hello! Kahiye main aapki Grammar seekhne me kaise madad karu? Aap Noun, Verb, ya kisi Tense ke baare me pooch sakte hain."
+        };
+
+        function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
+        function triggerChatAction() {
+            const chatBox = document.getElementById('chat-input');
+            let msg = chatBox.value.trim().toLowerCase();
+            if(!msg) return;
+            const stream = document.getElementById('chat-stream');
+            stream.innerHTML += `<div class="flex gap-2.5 flex-row-reverse items-start"><div class="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center font-bold text-black flex-shrink-0">S</div><div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-slate-100 shadow-md">${chatBox.value}</div></div>`;
+            chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
+
+            setTimeout(() => {
+                let answer = "Maaf karna, main sirf Grammar janta hu. Kripya puchein jaise: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', ya 'Active Passive'.";
+                let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
+                for(let key of keys) { 
+                    if(msg.includes(key)) { 
+                        answer = aiKnowledge[key]; 
+                        break; 
+                    } 
+                }
+                stream.innerHTML += `<div class="flex gap-2.5 items-start"><div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div><div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 text-xs">${answer}</div></div>`;
+                stream.scrollTop = stream.scrollHeight;
+            }, 600);
+        }
+        function clearChat() { document.getElementById('chat-stream').innerHTML = ''; }
+
+
+        // === HUGE NON-REPEATING GAMES DATABASE ===
+        const fullMCQData = [
+            {q: "Neither Rahul nor his friends ____ present.", o: ["is", "are", "has", "have been"], c: 1},
+            {q: "If I ____ a billionaire, I would travel the world.", o: ["am", "was", "were", "had been"], c: 2},
+            {q: "She has been studying ____ morning.", o: ["for", "since", "from", "in"], c: 1},
+            {q: "Hardly had I reached the station ____ the train left.", o: ["then", "when", "than", "after"], c: 1},
+            {q: "By next year, she ____ graduated.", o: ["will be", "would have", "will have", "has"], c: 2},
+            {q: "He ___ a car.", o: ["has", "have", "is", "are"], c: 0},
+            {q: "They ___ playing football.", o: ["is", "am", "are", "was"], c: 2},
+            {q: "I ___ completed my work.", o: ["has", "have", "is", "are"], c: 1},
+            {q: "She ___ to the market yesterday.", o: ["go", "goes", "went", "gone"], c: 2},
+            {q: "The sun ___ in the east.", o: ["rise", "rises", "rose", "rising"], c: 1},
+            {q: "I have been living here ___ 2010.", o: ["for", "since", "from", "in"], c: 1},
+            {q: "He has been working ___ two hours.", o: ["since", "for", "from", "in"], c: 1},
+            {q: "Either you or I ___ wrong.", o: ["are", "is", "am", "were"], c: 2},
+            {q: "Bread and butter ___ my favorite breakfast.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Slow and steady ___ the race.", o: ["win", "wins", "won", "winning"], c: 1},
+            {q: "A pair of shoes ___ missing.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "The police ___ caught the thief.", o: ["has", "have", "is", "are"], c: 1},
+            {q: "The news ___ true.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Physics ___ a difficult subject.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "One of my friends ___ going to America.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Each of the boys ___ given a prize.", o: ["was", "were", "has", "have"], c: 0},
+            {q: "The quality of the apples ___ not good.", o: ["was", "were", "has", "have"], c: 0},
+            {q: "A lot of money ___ wasted.", o: ["was", "were", "has", "have"], c: 0},
+            {q: "My spectacles ___ missing.", o: ["is", "are", "has", "have"], c: 1},
+            {q: "He as well as his friends ___ innocent.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Not only he but also his brothers ___ guilty.", o: ["is", "are", "was", "has"], c: 1},
+            {q: "He ordered ___ cup of coffee.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "She is ___ European.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "He is ___ honest man.", o: ["a", "an", "the", "no article"], c: 1},
+            {q: "He gave me ___ piece of advice.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "I read ___ book yesterday.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "He is looking ___ a job.", o: ["at", "for", "to", "after"], c: 1},
+            {q: "She takes ___ her mother.", o: ["after", "for", "to", "with"], c: 0},
+            {q: "The meeting was put ___.", o: ["on", "off", "out", "away"], c: 1},
+            {q: "Please turn ___ the light.", o: ["on", "in", "at", "over"], c: 0},
+            {q: "He gave ___ smoking.", o: ["away", "in", "up", "out"], c: 2},
+            {q: "She deals ___ garments.", o: ["in", "with", "at", "on"], c: 0},
+            {q: "I agree ___ you.", o: ["to", "with", "at", "on"], c: 1},
+            {q: "I agree ___ your proposal.", o: ["to", "with", "at", "on"], c: 0},
+            {q: "He died ___ cholera.", o: ["of", "from", "with", "by"], c: 0},
+            {q: "She died ___ overwork.", o: ["of", "from", "with", "by"], c: 1},
+            {q: "He is angry ___ me.", o: ["at", "with", "to", "on"], c: 1},
+            {q: "I am angry ___ his behavior.", o: ["at", "with", "to", "on"], c: 0},
+            {q: "He arrived ___ the station.", o: ["in", "at", "on", "to"], c: 1},
+            {q: "They arrived ___ London.", o: ["in", "at", "on", "to"], c: 0},
+            {q: "I congratulate you ___ your success.", o: ["for", "on", "at", "to"], c: 1},
+            {q: "He is suffering ___ fever.", o: ["of", "from", "with", "by"], c: 1},
+            {q: "She is afraid ___ dogs.", o: ["from", "of", "with", "by"], c: 1},
+            {q: "He is good ___ English.", o: ["in", "at", "with", "for"], c: 1},
+            {q: "Listen ___ me.", o: ["at", "to", "with", "for"], c: 1},
+            {q: "Beware ___ dogs.", o: ["from", "of", "with", "by"], c: 1},
+            {q: "I am fond ___ music.", o: ["of", "from", "with", "by"], c: 0},
+            {q: "He is interested ___ politics.", o: ["in", "on", "at", "with"], c: 0},
+            {q: "She is proud ___ her beauty.", o: ["of", "for", "with", "by"], c: 0},
+            {q: "I belong ___ a middle-class family.", o: ["from", "to", "with", "in"], c: 1},
+            {q: "He believes ___ God.", o: ["on", "in", "at", "to"], c: 1},
+            {q: "She complained ___ the principal.", o: ["to", "against", "with", "on"], c: 0},
+            {q: "He depends ___ his parents.", o: ["in", "on", "at", "with"], c: 1},
+            {q: "I prefer tea ___ coffee.", o: ["than", "to", "over", "from"], c: 1},
+            {q: "He is senior ___ me.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "She is junior ___ him.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "He is superior ___ all.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "She is inferior ___ none.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "I parted ___ my friends.", o: ["from", "with", "by", "to"], c: 0},
+            {q: "He parted ___ his money.", o: ["from", "with", "by", "to"], c: 1},
+            {q: "I am obliged ___ you.", o: ["for", "to", "with", "by"], c: 1},
+            {q: "He is known ___ me.", o: ["by", "to", "for", "with"], c: 1},
+            {q: "The book is written ___ him.", o: ["by", "with", "to", "from"], c: 0},
+            {q: "He killed the snake ___ a stick.", o: ["by", "with", "from", "in"], c: 1},
+            {q: "She cut the apple ___ a knife.", o: ["by", "with", "from", "in"], c: 1},
+            {q: "I go to school ___ foot.", o: ["by", "on", "with", "in"], c: 1},
+            {q: "He travels ___ train.", o: ["by", "on", "with", "in"], c: 0},
+            {q: "She sat ___ the shade of a tree.", o: ["under", "in", "below", "beneath"], c: 1},
+            {q: "The cat is hiding ___ the table.", o: ["under", "in", "below", "beneath"], c: 0},
+            {q: "He jumped ___ the river.", o: ["in", "into", "on", "onto"], c: 1},
+            {q: "The frog fell ___ the well.", o: ["in", "into", "on", "onto"], c: 1},
+            {q: "He poured the water ___ the jug.", o: ["in", "into", "on", "onto"], c: 1},
+            {q: "The book is ___ the table.", o: ["in", "into", "on", "onto"], c: 2}
+        ];
+
+        const fullJumbleData = [
+            "He is a good boy", "She writes a letter", "They are playing football", "I will go to the market", 
+            "We have won the match", "The sun rises in the east", "Dogs bark at night", "My mother cooks delicious food", 
+            "He was reading a book", "I have been waiting here", "She will be singing a song", "They had gone to school", 
+            "You should respect your elders", "I am looking forward to it", "The train left the station", "We are learning English grammar", 
+            "He is the best student", "She bought a new dress", "They will arrive tomorrow", "I cannot solve this problem", 
+            "He has finished his work", "The cat is sleeping on the bed", "Birds are flying in the sky", "We must protect our environment", 
+            "Water boils at hundred degrees", "He is working very hard", "She paints beautiful pictures", "They are building a house", 
+            "I saw a shooting star", "He speaks English fluently", "She has a cute little puppy", "We enjoyed the movie yesterday", 
+            "The baby is crying loudly", "He drives his car carefully", "They have bought a new car", "I will help you tomorrow", 
+            "She is watering the plants", "He broke the glass window", "The teacher is explaining the lesson", "We are going on a trip", 
+            "She makes very good coffee", "They were watching television", "I have completed my assignment", "He is listening to music", 
+            "She wrote a long story", "They are playing in the garden", "I will call you later", "He found his lost keys", 
+            "She is feeding the street dogs", "They are planting trees", "I like to read historical books", "He is wearing a blue shirt", 
+            "She has beautifully decorated the room", "They are laughing at the joke", "I will never forget this day", "He is repairing his old bicycle", 
+            "She is practicing the piano", "They are cleaning the classroom", "I have polished my shoes", "He is writing an important email", 
+            "She received a beautiful gift", "They are dancing on the stage", "I am baking a chocolate cake", "He is swimming in the pool", 
+            "She has baked some cookies", "They are painting the fence", "I will clean the house", "He is washing his clothes", 
+            "She is cooking dinner now", "They are fighting for their rights", "I have bought some fresh fruits", "He is running very fast", 
+            "She is talking to her friend", "They are waiting for the bus", "I will attend the meeting", "He is climbing the tall tree", 
+            "She is watching a horror movie", "They are studying for exams", "I have locked the front door", "He is packing his bags", 
+            "She is searching for her ring", "They are organizing a party", "I will bring the snacks", "He is eating a juicy apple", 
+            "She is wearing beautiful jewelry", "They are throwing the ball", "I have fixed the broken chair", "He is playing the guitar", 
+            "She is looking at the mirror", "They are running in the race", "I will read this novel", "He is drawing a landscape"
+        ];
+
+        const fullTypeData = [
+            {q: "He has given ___ (preposition) smoking.", a: "up"}, {q: "I prefer coffee ___ (preposition) tea.", a: "to"},
+            {q: "One of the boys ___ (is/are) missing.", a: "is"}, {q: "He talks as if he ___ (was/were) the boss.", a: "were"},
+            {q: "I am looking forward to ___ (meet) you.", a: "meeting"}, {q: "She is good ___ (at/in) mathematics.", a: "at"},
+            {q: "He is afraid ___ (of/from) dogs.", a: "of"}, {q: "I have been here ___ (since/for) morning.", a: "since"},
+            {q: "We have lived here ___ (for/since) ten years.", a: "for"}, {q: "He is senior ___ (to/than) me.", a: "to"},
+            {q: "She died ___ (of/from) cholera.", a: "of"}, {q: "He is blind ___ (in/of) one eye.", a: "in"},
+            {q: "I agree ___ (with/to) your proposal.", a: "to"}, {q: "He deals ___ (in/with) garments.", a: "in"},
+            {q: "She is fond ___ (of/about) music.", a: "of"}, {q: "The book is ___ (on/in) the table.", a: "on"},
+            {q: "He jumped ___ (in/into) the river.", a: "into"}, {q: "Listen ___ (to/at) your teacher.", a: "to"},
+            {q: "He was born ___ (in/on) 1990.", a: "in"}, {q: "She went ___ (to/in) the market.", a: "to"},
+            {q: "I am proud ___ (of/about) you.", a: "of"}, {q: "He is married ___ (to/with) my sister.", a: "to"},
+            {q: "Do not laugh ___ (at/on) the poor.", a: "at"}, {q: "Beware ___ (of/from) pickpockets.", a: "of"},
+            {q: "He is capable ___ (of/in) doing this.", a: "of"}, {q: "I congratulate you ___ (on/for) your success.", a: "on"},
+            {q: "He was absent ___ (from/for) the class.", a: "from"}, {q: "The train arrives ___ (at/in) 6 PM.", a: "at"},
+            {q: "She is famous ___ (for/of) her beauty.", a: "for"}, {q: "He is guilty ___ (of/for) theft.", a: "of"},
+            {q: "They arrived ___ (at/in) London.", a: "in"}, {q: "I am tired ___ (of/from) walking.", a: "of"},
+            {q: "He is addicted ___ (to/with) gambling.", a: "to"}, {q: "She was dressed ___ (in/with) red.", a: "in"},
+            {q: "He is popular ___ (with/among) the students.", a: "with"}, {q: "I rely ___ (on/in) you.", a: "on"},
+            {q: "She takes pride ___ (in/on) her wealth.", a: "in"}, {q: "He is faithful ___ (to/with) his master.", a: "to"},
+            {q: "I am obliged ___ (to/for) you.", a: "to"}, {q: "He succeeded ___ (in/at) the exam.", a: "in"},
+            {q: "She smiled ___ (at/on) him.", a: "at"}, {q: "I warn you ___ (against/about) him.", a: "against"},
+            {q: "He was accused ___ (of/for) murder.", a: "of"}, {q: "She is eligible ___ (for/to) the post.", a: "for"},
+            {q: "I object ___ (to/against) your remark.", a: "to"}, {q: "He was absorbed ___ (in/with) his studies.", a: "in"},
+            {q: "She is familiar ___ (with/to) this place.", a: "with"}, {q: "I was amazed ___ (at/by) his courage.", a: "at"},
+            {q: "He is notorious ___ (for/of) his temper.", a: "for"}, {q: "She has a passion ___ (for/of) reading.", a: "for"},
+            {q: "He is eligible ___ (for/to) promotion.", a: "for"}, {q: "She is ignorant ___ (of/about) the facts.", a: "of"},
+            {q: "I am acquainted ___ (with/to) him.", a: "with"}, {q: "He is deprived ___ (of/from) his rights.", a: "of"},
+            {q: "She is devoid ___ (of/from) common sense.", a: "of"}, {q: "I am convinced ___ (of/about) his honesty.", a: "of"},
+            {q: "He is endowed ___ (with/by) talents.", a: "with"}, {q: "She is infected ___ (with/by) a virus.", a: "with"},
+            {q: "I am involved ___ (in/with) a project.", a: "in"}, {q: "He is overwhelmed ___ (with/by) grief.", a: "with"},
+            {q: "She is satisfied ___ (with/by) her results.", a: "with"}, {q: "I am sympathetic ___ (to/with) her.", a: "to"},
+            {q: "He is tolerant ___ (of/towards) others.", a: "of"}, {q: "She is worthy ___ (of/for) praise.", a: "of"},
+            {q: "I am annoyed ___ (at/with) his behavior.", a: "at"}, {q: "He is astonished ___ (at/by) the news.", a: "at"},
+            {q: "She is delighted ___ (at/with) the gift.", a: "with"}, {q: "I am disappointed ___ (in/with) him.", a: "in"},
+            {q: "He is disgusted ___ (with/at) her attitude.", a: "with"}, {q: "She is shocked ___ (at/by) his death.", a: "at"},
+            {q: "I am surprised ___ (at/by) his success.", a: "at"}, {q: "He is vexed ___ (at/with) his brother.", a: "with"},
+            {q: "She is alarmed ___ (at/by) the noise.", a: "at"}, {q: "I am amused ___ (at/by) his jokes.", a: "at"},
+            {q: "He is frightened ___ (of/from) the dark.", a: "of"}, {q: "She is terrified ___ (of/from) snakes.", a: "of"},
+            {q: "I am scared ___ (of/from) ghosts.", a: "of"}
+        ];
+
+        const fullMatchData = [
+            {q: "She teaches English.", a: "Simple Present"}, {q: "Birds fly in the sky.", a: "Simple Present"},
+            {q: "I am writing an email.", a: "Present Continuous"}, {q: "It is raining now.", a: "Present Continuous"},
+            {q: "We have won the match.", a: "Present Perfect"}, {q: "She has finished work.", a: "Present Perfect"},
+            {q: "I have been reading.", a: "Present Perfect Continuous"}, {q: "It has been raining.", a: "Present Perfect Continuous"},
+            {q: "He bought a car.", a: "Simple Past"}, {q: "They went to school.", a: "Simple Past"},
+            {q: "She was singing.", a: "Past Continuous"}, {q: "We were playing.", a: "Past Continuous"},
+            {q: "The train had left.", a: "Past Perfect"}, {q: "I had seen him.", a: "Past Perfect"},
+            {q: "I had been working.", a: "Past Perfect Continuous"}, {q: "They had been sleeping.", a: "Past Perfect Continuous"},
+            {q: "I will go tomorrow.", a: "Simple Future"}, {q: "She will sing.", a: "Simple Future"},
+            {q: "I will be sleeping.", a: "Future Continuous"}, {q: "They will be running.", a: "Future Continuous"},
+            {q: "I will have finished.", a: "Future Perfect"}, {q: "She will have cooked.", a: "Future Perfect"},
+            {q: "I will have been playing.", a: "Future Perfect Continuous"}, {q: "They will have been studying.", a: "Future Perfect Continuous"},
+            {q: "He reads a book daily.", a: "Simple Present"}, {q: "They play cricket every Sunday.", a: "Simple Present"},
+            {q: "She is dancing gracefully.", a: "Present Continuous"}, {q: "The boys are running fast.", a: "Present Continuous"},
+            {q: "I have eaten my breakfast.", a: "Present Perfect"}, {q: "They have painted the wall.", a: "Present Perfect"},
+            {q: "He has been studying since 8 AM.", a: "Present Perfect Continuous"}, {q: "We have been waiting for two hours.", a: "Present Perfect Continuous"},
+            {q: "I saw him yesterday.", a: "Simple Past"}, {q: "She wrote a beautiful poem.", a: "Simple Past"},
+            {q: "They were laughing loudly.", a: "Past Continuous"}, {q: "He was driving carefully.", a: "Past Continuous"},
+            {q: "I had completed the task before he came.", a: "Past Perfect"}, {q: "She had left when I arrived.", a: "Past Perfect"},
+            {q: "He had been living there for five years.", a: "Past Perfect Continuous"}, {q: "They had been playing since morning.", a: "Past Perfect Continuous"},
+            {q: "I shall help you.", a: "Simple Future"}, {q: "He will buy a new house.", a: "Simple Future"},
+            {q: "She will be waiting for me.", a: "Future Continuous"}, {q: "They will be watching TV.", a: "Future Continuous"},
+            {q: "I shall have reached home by then.", a: "Future Perfect"}, {q: "He will have finished the job.", a: "Future Perfect"},
+            {q: "She will have been teaching for ten years.", a: "Future Perfect Continuous"}, {q: "They will have been traveling for two days.", a: "Future Perfect Continuous"},
+            {q: "The sun sets in the west.", a: "Simple Present"}, {q: "Water boils at 100 degrees.", a: "Simple Present"},
+            {q: "I am listening to music.", a: "Present Continuous"}, {q: "She is baking a cake.", a: "Present Continuous"},
+            {q: "He has just arrived.", a: "Present Perfect"}, {q: "I have known him for years.", a: "Present Perfect"},
+            {q: "She has been sleeping since noon.", a: "Present Perfect Continuous"}, {q: "It has been snowing all day.", a: "Present Perfect Continuous"},
+            {q: "We met him last week.", a: "Simple Past"}, {q: "He died in 1990.", a: "Simple Past"},
+            {q: "I was reading a novel.", a: "Past Continuous"}, {q: "She was washing clothes.", a: "Past Continuous"},
+            {q: "The patient had died before the doctor came.", a: "Past Perfect"}, {q: "I had already eaten.", a: "Past Perfect"},
+            {q: "She had been crying for an hour.", a: "Past Perfect Continuous"}, {q: "He had been walking all day.", a: "Past Perfect Continuous"},
+            {q: "I will call you tonight.", a: "Simple Future"}, {q: "It will rain tomorrow.", a: "Simple Future"},
+            {q: "I will be studying at that time.", a: "Future Continuous"}, {q: "He will be flying to London.", a: "Future Continuous"},
+            {q: "I will have completed this by Monday.", a: "Future Perfect"}, {q: "She will have graduated next year.", a: "Future Perfect"},
+            {q: "I will have been working here for 5 years.", a: "Future Perfect Continuous"}
+        ];
+
+        const allTenseNames = [
+            "Simple Present", "Present Continuous", "Present Perfect", "Present Perfect Continuous", 
+            "Simple Past", "Past Continuous", "Past Perfect", "Past Perfect Continuous", 
+            "Simple Future", "Future Continuous", "Future Perfect", "Future Perfect Continuous"
+        ];
+
+        function getFreshQuestions(gameKey, fullArray, count) {
+            let pool = JSON.parse(localStorage.getItem(gameKey));
+            if (!pool || pool.length < count) {
+                pool = [...fullArray].sort(() => 0.5 - Math.random());
+            }
+            let selected = pool.splice(0, count);
+            localStorage.setItem(gameKey, JSON.stringify(pool));
+            return selected;
+        }
+
+        // === CROSSWORD 100% UNIQUE LEVEL DATABASE WITH MASSIVE BONUS WORDS (a array) ===
+        const cwMasterDB = [
+            {l:"HEART", w:["HEART","EARTH","HEAR","TEAR","RATE"], a:["ART","EAR","EAT","ATE","TEA","HAT","RAT","TAR","HARE","ARE","ERA"]}, 
+            {l:"WATER", w:["WATER","WEAR","TEAR","RATE"], a:["WAR","RAW","ART","RAT","TAR","EAT","ATE","TEA","ARE","ERA"]},
+            {l:"BOARD", w:["BOARD","BROAD","ROAD","ROB","ROD","OAR","BAD"], a:["BOAR","DAB","BAR"]},
+            {l:"BREAD", w:["BREAD","READ","BEAR","DEAR","RED","BAD"], a:["BARE","DARE","EAR","ARE","ERA","BAR","BED"]},
+            {l:"TIGER", w:["TIGER","TIRE","RITE","GET"], a:["TRIG","GRIT","TIE"]},
+            {l:"LEMON", w:["LEMON","MELON","MEN","ONE"], a:["NOEL"]},
+            {l:"PEACH", w:["PEACH","EACH","CHEAP","PEA","CAP"], a:["PACE","ACHE","APE","CEP"]},
+            {l:"SPICE", w:["SPICE","PIECE","EPIC","ICE","PIE"], a:["SPEC","SIP"]},
+            {l:"CLOCK", w:["CLOCK","LOCK","COOK"], a:["COCK","COL"]},
+            {l:"CHAIR", w:["CHAIR","HAIR","RICH","AIR","CAR"], a:["CHAR","ARC"]},
+            {l:"NURSE", w:["NURSE","SURE","RUNS","USE","RUN"], a:["RUSE","SUN","URN"]},
+            {l:"SMILE", w:["SMILE","MILES","SLIM","MILE"], a:["ISLE","ELM","LIE"]},
+            {l:"DANCE", w:["DANCE","CANED","DEAN","CANE","AND"], a:["ACED","END","CAN","DAN"]},
+            {l:"BRAIN", w:["BRAIN","RAIN","BRAN","RAN","AIR"], a:["RIB","BAN","BAR"]},
+            {l:"PLANT", w:["PLANT","PLAN","PANT","TAP","PAN"], a:["NAP","LAP","PAL"]},
+            {l:"LISTEN", w:["LISTEN","SILENT","INSET","LINES","TENS","NETS"], a:["LET","SET","TEN","TIN","SIT","LIT","LIST"]},
+            {l:"TEACHER", w:["TEACHER","TEACH","CHEAT","HERE","HEAR","EACH"], a:["TREE","RACE","CARE","TEE","CAT","THE"]},
+            {l:"STUDENT", w:["STUDENT","STUDY","TENT","DUST","NEST","TENS"], a:["NUT","NET","SET","SUN","TEN"]},
+            {l:"SCIENCE", w:["SCIENCE","SCENE","SINCE","NICE","ICE"], a:["SEEN","SEE","SIN"]},
+            {l:"HISTORY", w:["HISTORY","SHIRT","STORY","SHORT","TOYS","SORT"], a:["HOST","ROSY","TOY","SIR","HIT"]},
+            {l:"ENGLISH", w:["ENGLISH","SINGLE","SHINE","LINES","SIGN","SING"], a:["LENS","HENS","HIS","LEG","SIN"]},
+            {l:"MORNING", w:["MORNING","MINOR","IRON","RING","NORM"], a:["ROOM","NOR","ION"]},
+            {l:"EVENING", w:["EVENING","ENGINE","GIVEN","NINE","EVEN"], a:["VEIN","GIVE"]},
+            {l:"ANIMALS", w:["ANIMALS","SNAIL","NAILS","MAIL","SAIL","MAIN"], a:["SLAM","MAN","AIM"]},
+            {l:"PICTURE", w:["PICTURE","PRICE","TRICE","CURE","PURE","RICE"], a:["PIECE","CREPT","PUT","CUP","PET"]},
+            {l:"COUNTRY", w:["COUNTRY","COUNT","COURT","TOUR","CORN","TURN"], a:["COIN","OUT","NUT","NOT"]},
+            {l:"MACHINE", w:["MACHINE","CINEMA","MINCE","CHAIN","NAME"], a:["MICE","CHIN","MAN","CAN","MAC"]},
+            {l:"JOURNEY", w:["JOURNEY","ENJOY","YOURS","JURY","YOUR"], a:["TOUR","JOY","RUN"]},
+            {l:"NOTHING", w:["NOTHING","NIGHT","THING","THIN","HINT"], a:["INTO","NOT","GOT","HOT"]},
+            {l:"WITHOUT", w:["WITHOUT","OUTWITH","YOUTH","WITH","OUT"], a:["HUT","HOW","HIT","TWO"]},
+            {l:"SQUARE", w:["SQUARE","SURE","ERA","EAR","ARE"], a:["SEAR","SEA","USE"]},
+            {l:"MARKET", w:["MARKET","MAKER","TEAM","MAKE","TAKE","MARK"], a:["RATE","TAME","ART","MAT","RAT"]},
+            {l:"GARDEN", w:["GARDEN","DANGER","READ","DEAR","NEAR","GEAR"], a:["DARE","DRAG","RED","AND","RAN"]},
+            {l:"SUMMER", w:["SUMMER","MUSE","SURE","RUM","SUM"], a:["USER","USE"]},
+            {l:"WINTER", w:["WINTER","TWIN","WIRE","WENT","WINE","TEN"], a:["TIRE","RENT","WIN","TIN","NET"]},
+            {l:"CARE", w:["CARE","RACE","CAR","EAR"], a:["ACRE","ARE","ERA","ARC"]}, 
+            {l:"TEAM", w:["TEAM","MEAT","MATE","EAT"], a:["TAME","MAT","TEA","ATE"]},
+            {l:"SPOT", w:["SPOT","POTS","POST","TOP"], a:["OPT","SOT","POT"]},
+            {l:"NOTE", w:["NOTE","TONE","TEN","NOT"], a:["NET","ONE","TOE"]},
+            {l:"PLAY", w:["PLAY","PAL","LAP","LAY"], a:["PAY","YAP"]}
+        ];
+
+        function getCrossWordLevelData(lvlNum) {
+            let idx = (lvlNum - 1) % cwMasterDB.length;
+            return JSON.parse(JSON.stringify(cwMasterDB[idx]));
+        }
+
+        const wordSearchDB = [
+            "ANIMALS|LION,TIGER,BEAR,ZEBRA,PANDA,SNAKE,SHARK,EAGLE",
+            "FOOD|PIZZA,PASTA,BREAD,SALAD,SUSHI,BURGER,CHEESE,TACO",
+            "COLORS|BLUE,GREEN,YELLOW,PURPLE,ORANGE,BLACK,WHITE,BROWN",
+            "FRUITS|APPLE,MANGO,GRAPE,PEACH,CHERRY,BANANA,PAPAYA,MELON",
+            "SPORTS|SOCCER,TENNIS,HOCKEY,CRICKET,RUGBY,GOLF,BOXING,TRACK",
+            "VEHICLES|CAR,BUS,TRAIN,PLANE,TRUCK,BIKE,BOAT,SHIP",
+            "CLOTHES|SHIRT,PANTS,SHOES,SOCKS,COAT,HAT,DRESS,SKIRT",
+            "WEATHER|RAIN,SNOW,WIND,SUN,STORM,CLOUD,FOG,HAIL",
+            "BODY|HEAD,HAND,FOOT,EYE,NOSE,EAR,MOUTH,HAIR",
+            "FAMILY|MOTHER,FATHER,SISTER,BROTHER,UNCLE,AUNT,COUSIN,BABY",
+            "FURNITURE|BED,CHAIR,TABLE,DESK,SOFA,COUCH,LAMP,RUG",
+            "PROFESSIONS|DOCTOR,NURSE,PILOT,CHEF,BAKER,JUDGE,ACTOR,MAYOR",
+            "INSECTS|ANT,BEE,FLY,MOTH,WASP,BUG,MITE,FLEA",
+            "BIRDS|DUCK,SWAN,DOVE,CROW,HAWK,OWL,GULL,LOON",
+            "FLOWERS|ROSE,LILY,DAISY,TULIP,IRIS,POPPY,LOTUS,PANSY",
+            "INSTRUMENTS|PIANO,FLUTE,DRUM,HORN,HARP,LUTE,BELL,GONG",
+            "METALS|GOLD,IRON,ZINC,LEAD,TIN,BRASS,STEEL,COPPER",
+            "PLANETS|MARS,VENUS,EARTH,PLUTO,SATURN,URANUS,NEPTUNE,JUPITER",
+            "MONTHS|APRIL,MARCH,MAY,JUNE,JULY,AUGUST,OCTOBER,JANUARY",
+            "DAYS|MONDAY,FRIDAY,SUNDAY,TUESDAY,THURSDAY,SATURDAY,WEDNESDAY,WEEK",
+            "SEASONS|SPRING,SUMMER,AUTUMN,WINTER,FALL,MONSOON,DRY,WET",
+            "DRINKS|WATER,JUICE,MILK,SODA,TEA,COFFEE,WINE,BEER",
+            "DESSERTS|CAKE,PIE,TART,CANDY,FUDGE,DONUT,SWEET,CHOC",
+            "TREES|OAK,PINE,ELM,ASH,FIR,PALM,MAPLE,WILLOW",
+            "REPTILES|SNAKE,LIZARD,TURTLE,GECKO,SKINK,VIPER,COBRA,ADDER",
+            "SPICES|SALT,MINT,SAGE,DILL,CUMIN,CLOVE,ANISE,BASIL",
+            "TOOLS|SAW,AWL,AXE,FILE,DRILL,VISE,PLIER,CLAMP",
+            "TOYS|DOLL,KITE,BALL,BLOCK,BEAR,YOYO,TRAIN,CAR",
+            "STATIONERY|PEN,TAPE,GLUE,RULER,CLIP,FILE,BOOK,PAGE",
+            "ROOMS|HALL,BATH,KITCHEN,LOFT,ATTIC,CELLAR,PANTRY,PORCH",
+            "EMOTIONS|JOY,ANGER,FEAR,HATE,SAD,HAPPY,PROUD,SHY",
+            "HOBBIES|READ,SING,COOK,BAKE,KNIT,DRAW,PAINT,SWIM",
+            "GEMS|RUBY,OPAL,JADE,PEARL,BERYL,TOPAZ,AGATE,ONYX",
+            "FISH|TUNA,CARP,PIKE,BASS,COD,EEL,SOLE,RAY",
+            "DANCES|TANGO,WALTZ,SALSA,RUMBA,SAMBA,JIVE,POLKA,DISCO",
+            "LANGUAGES|HINDI,FRENCH,DUTCH,GREEK,LATIN,ARABIC,WELSH,IRISH",
+            "COUNTRIES|INDIA,JAPAN,SPAIN,ITALY,CHILE,EGYPT,PERU,CHINA",
+            "CITIES|PARIS,TOKYO,DELHI,ROME,MIAMI,DUBAI,SEOUL,LONDON",
+            "RIVERS|NILE,AMAZON,GANGES,INDUS,RHINE,VOLGA,CONGO,SEINE",
+            "MOUNTAINS|ALPS,ANDES,URALS,ATLAS,ROCKY,HIMALAYA,K2,FUJI",
+            "OCEANS|PACIFIC,ATLANTIC,INDIAN,ARCTIC,SOUTHERN,SEA,GULF,BAY",
+            "CONTINENTS|ASIA,AFRICA,EUROPE,AMERICA,ANTARCTICA,OCEANIA,ISLAND,LAND",
+            "FEELINGS|GLAD,CALM,TENSE,NUMB,WEAK,BOLD,BRAVE,MEEK",
+            "VIRTUES|HOPE,FAITH,LOVE,PEACE,TRUTH,GRACE,MERCY,PIETY",
+            "DISEASES|COLD,FLU,MUMPS,COUGH,FEVER,MEASLES,POX,RABIES",
+            "MEDICINES|PILL,SYRUP,DROPS,BALM,CREAM,SALVE,TONIC,CURE",
+            "ORGANS|LUNG,HEART,LIVER,BRAIN,KIDNEY,SKIN,GUT,VEIN",
+            "BONES|SKULL,RIB,SPINE,FEMUR,TIBIA,PELVIS,JAW,ULNA",
+            "SHAPES|SQUARE,CIRCLE,OVAL,CONE,CUBE,STAR,LINE,RING",
+            "NATURE|ROCK,DIRT,SAND,MUD,CLAY,DUST,SOIL,PEAT"
+        ];
+
+        let wsLevelData = null, wsGrid = [], wsFoundWords = [];
+        let isWSDragging = false, wsDragStart = null, wsDragCurrent = null, wsSolvedHighlights = [];
+
+        function generateWSGrid(wordsStr) {
+            let words = wordsStr.split(',');
+            let grid = Array(10).fill(null).map(()=>Array(10).fill(''));
+            let dirs = [[0,1], [1,0], [1,1]]; 
+            
+            for(let w of words) {
+                let placed = false;
+                for(let attempts=0; attempts<100 && !placed; attempts++) {
+                    let d = dirs[Math.floor(Math.random()*dirs.length)];
+                    let r = Math.floor(Math.random()*10);
+                    let c = Math.floor(Math.random()*10);
+                    if(r + d[0]*w.length <= 10 && c + d[1]*w.length <= 10) {
+                        let canPlace = true;
+                        for(let i=0; i<w.length; i++) {
+                            if(grid[r+d[0]*i][c+d[1]*i] !== '' && grid[r+d[0]*i][c+d[1]*i] !== w[i]) {
+                                canPlace = false; break;
+                            }
+                        }
+                        if(canPlace) {
+                            for(let i=0; i<w.length; i++) grid[r+d[0]*i][c+d[1]*i] = w[i];
+                            placed = true;
+                        }
+                    }
+                }
+            }
+            let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            for(let i=0; i<10; i++) {
+                for(let j=0; j<10; j++) {
+                    if(grid[i][j] === '') grid[i][j] = letters[Math.floor(Math.random()*26)];
+                }
+            }
+            return grid;
+        }
+
+        // --- WORD SEARCH CAPSULE CURVED LINE LOGIC ---
+        function getCellFromCoords(x, y) {
+            let el = document.elementFromPoint(x, y);
+            if(el && el.closest('.ws-cell')) {
+                let cell = el.closest('.ws-cell');
+                return { r: parseInt(cell.dataset.r), c: parseInt(cell.dataset.c) };
+            }
+            return null;
+        }
+
+        function getCellCenter(r, c) {
+            let gridEl = document.getElementById('ws-grid');
+            let cellEl = document.getElementById(`ws-${r}-${c}`);
+            if(!gridEl || !cellEl) return null;
+            let gridRect = gridEl.getBoundingClientRect();
+            let cellRect = cellEl.getBoundingClientRect();
+            return {
+                x: (cellRect.left + cellRect.width / 2) - gridRect.left,
+                y: (cellRect.top + cellRect.height / 2) - gridRect.top,
+                size: cellRect.width 
+            };
+        }
+
+        function wsHandleStart(e) {
+            let coords = e.touches ? e.touches[0] : e;
+            let cell = getCellFromCoords(coords.clientX, coords.clientY);
+            if(!cell) return;
+            
+            isWSDragging = true;
+            wsDragStart = cell;
+            wsDragCurrent = cell;
+            
+            let line = document.getElementById('ws-selection-line');
+            if(line) {
+                line.style.opacity = '0';
+                line.style.width = '0px';
+            }
+        }
+
+        function wsHandleMove(e) {
+            if(!isWSDragging || !wsDragStart) return;
+            if(e.cancelable) e.preventDefault(); 
+
+            let coords = e.touches ? e.touches[0] : e;
+            let currentCell = getCellFromCoords(coords.clientX, coords.clientY);
+            if(!currentCell) return;
+
+            let dr = currentCell.r - wsDragStart.r;
+            let dc = currentCell.c - wsDragStart.c;
+            
+            if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return; 
+
+            wsDragCurrent = currentCell;
+            drawGeometricLine('ws-selection-line', wsDragStart, currentCell);
+        }
+
+        function wsHandleEnd() {
+            if(!isWSDragging || !wsDragStart || !wsDragCurrent) {
+                isWSDragging = false;
+                wsDragStart = null;
+                wsDragCurrent = null;
+                let line = document.getElementById('ws-selection-line');
+                if(line) line.style.opacity = '0';
+                return;
+            }
+            isWSDragging = false;
+            let line = document.getElementById('ws-selection-line');
+            
+            let endCell = wsDragCurrent;
+
+            let dr = endCell.r - wsDragStart.r;
+            let dc = endCell.c - wsDragStart.c;
+            let len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
+            let stepR = dr === 0 ? 0 : dr / Math.abs(dr);
+            let stepC = dc === 0 ? 0 : dc / Math.abs(dc);
+
+            let selectedWord = "";
+            for(let i=0; i<len; i++) {
+                selectedWord += wsGrid[wsDragStart.r + stepR*i][wsDragStart.c + stepC*i];
+            }
+            let reversedWord = selectedWord.split('').reverse().join('');
+            
+            let words = wsLevelData.split('|')[1].split(',');
+            let foundW = null, finalStart = null, finalEnd = null;
+
+            if(words.includes(selectedWord) && !wsFoundWords.includes(selectedWord)) {
+                foundW = selectedWord; finalStart = wsDragStart; finalEnd = endCell;
+            } else if(words.includes(reversedWord) && !wsFoundWords.includes(reversedWord)) {
+                foundW = reversedWord; finalStart = endCell; finalEnd = wsDragStart; 
+            }
+
+            if(foundW) {
+                addPermanentHighlight(finalStart, finalEnd, foundW, words.indexOf(foundW));
+                wsFoundWords.push(foundW);
+                
+                localStorage.setItem('ep_ws_found', JSON.stringify(wsFoundWords));
+                
+                document.getElementById('ws-word-' + foundW).classList.add('line-through', 'opacity-40');
+                showArenaAlert(true, `Found: ${foundW}!`);
+                
+                if(wsFoundWords.length === words.length) levelComplete();
+            }
+            
+            if(line) line.style.opacity = '0'; 
+            wsDragStart = null;
+            wsDragCurrent = null;
+        }
+
+        function drawGeometricLine(lineId, startCell, endCell, colorObj = null) {
+            let startCenter = getCellCenter(startCell.r, startCell.c);
+            let endCenter = getCellCenter(endCell.r, endCell.c);
+            let line = document.getElementById(lineId);
+            
+            if(!startCenter || !endCenter) return;
+
+            let dx = endCenter.x - startCenter.x;
+            let dy = endCenter.y - startCenter.y;
+            let distance = Math.sqrt(dx*dx + dy*dy);
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            let thickness = startCenter.size * 0.85; 
+            let padding = thickness; 
+
+            let centerX = (startCenter.x + endCenter.x) / 2;
+            let centerY = (startCenter.y + endCenter.y) / 2;
+
+            line.style.width = (distance + padding) + 'px'; 
+            line.style.height = thickness + 'px';
+            line.style.borderRadius = '9999px'; 
+            
+            line.style.left = (centerX - (distance + padding) / 2) + 'px';
+            line.style.top = (centerY - thickness / 2) + 'px';
+
+            line.style.transformOrigin = `center center`;
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.opacity = '1';
+
+            if(colorObj) {
+                line.style.background = colorObj.bg;
+                line.style.border = `2px solid ${colorObj.border}`;
+            } else {
+                line.style.background = 'rgba(168, 85, 247, 0.4)';
+                line.style.border = '2px solid #a855f7';
+            }
+        }
+
+        function addPermanentHighlight(start, end, word, wordIdx) {
+            let color = wsColors[wordIdx % wsColors.length];
+            let highlightId = `ws-highlight-${wsSolvedHighlights.length}`;
+            
+            let highlightEl = document.createElement('div');
+            highlightEl.id = highlightId;
+            highlightEl.className = 'ws-highlight-base';
+            document.getElementById('ws-grid').appendChild(highlightEl);
+            
+            drawGeometricLine(highlightId, start, end, color);
+            wsSolvedHighlights.push(highlightEl);
+            
+            // Turn actual letters white so they pop over the highlight
+            let dr = end.r - start.r, dc = end.c - start.c;
+            let len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
+            let stepR = dr === 0 ? 0 : dr / Math.abs(dr);
+            let stepC = dc === 0 ? 0 : dc / Math.abs(dc);
+            for(let i=0; i<len; i++) {
+                document.getElementById(`ws-${start.r+stepR*i}-${start.c+stepC*i}`).style.color = '#ffffff';
+            }
+        }
+
+        // === GAME ENGINE ===
+        let currentGameMode = "", sessionQ = [], curQIdx = 0, gameScore = 0;
+        let jumbleWords = [], jumbleAnswer = [];
+        let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
+
+        function useHint() {
+            if(remainingHints <= 0) return;
+
+            let hintUsed = false;
+            if(currentGameMode === 'mcq' || currentGameMode === 'match') {
+                let correctAns = (currentGameMode === 'mcq') ? sessionQ[curQIdx].c : sessionQ[curQIdx].a;
+                let btns = document.querySelectorAll('.opt-btn');
+                let disabledCount = 0;
+                btns.forEach((b, i) => {
+                    let isCorrect = (currentGameMode === 'mcq') ? (i === correctAns) : (b.innerText === correctAns);
+                    if(!isCorrect && disabledCount < 2 && !b.disabled) {
+                        b.disabled = true; b.classList.replace('bg-slate-900/90', 'bg-slate-900/40');
+                        b.classList.replace('hover:bg-slate-800/80', 'bg-slate-900/40');
+                        b.classList.add('opacity-40'); disabledCount++;
+                    }
+                });
+                if(disabledCount > 0) hintUsed = true;
+            } else if(currentGameMode === 'jumble') {
+                let correctSentence = sessionQ[curQIdx].split(" ");
+                let nextWordNeeded = correctSentence[jumbleAnswer.length];
+                let wIdx = jumbleWords.findIndex((w, i) => w === nextWordNeeded && !document.getElementById(`j-btn-${i}`).classList.contains('hidden'));
+                if(wIdx !== -1) { clickJumble(nextWordNeeded, wIdx, document.getElementById(`j-btn-${wIdx}`)); hintUsed = true; }
+            } else if(currentGameMode === 'type') {
+                document.getElementById('type-ans-in').value = sessionQ[curQIdx].a; 
+                hintUsed = true;
+            } else if(currentGameMode === 'crossword') {
+                let unfound = cwLevelData.w.find(w => !cwFoundWords.includes(w));
+                if(unfound) { document.getElementById('cw-in').value = unfound; hintUsed = true; }
+            } else if(currentGameMode === 'wordsearch') {
+                let words = wsLevelData.split('|')[1].split(',');
+                let unfound = words.find(w => !wsFoundWords.includes(w));
+                if(unfound) {
+                    let foundPath = null;
+                    let dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[-1,1],[1,-1]];
+                    for(let r=0; r<10 && !foundPath; r++) {
+                        for(let c=0; c<10 && !foundPath; c++) {
+                            if(wsGrid[r][c] === unfound[0]) {
+                                for(let d of dirs) {
+                                    let match = true; let tempPath = [];
+                                    for(let k=0; k<unfound.length; k++) {
+                                        let nr = r + d[0]*k; let nc = c + d[1]*k;
+                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== unfound[k]) { match = false; break; }
+                                        tempPath.push({r: nr, c: nc});
+                                    }
+                                    if(match) { foundPath = tempPath; break; }
+                                }
+                            }
+                        }
+                    }
+                    if(foundPath && foundPath.length > 0) {
+                         let startEl = document.getElementById(`ws-${foundPath[0].r}-${foundPath[0].c}`);
+                         let origColor = startEl.style.color;
+                         startEl.style.color = '#f59e0b'; // Amber pulse
+                         setTimeout(() => startEl.style.color = origColor, 2000);
+                         showArenaAlert(true, `Hint: Look for '${unfound}' starting at highlighted letter!`);
+                         hintUsed = true;
+                    }
+                }
+            }
+
+            if(hintUsed) {
+                remainingHints--;
+                localStorage.setItem('ep_global_hints', remainingHints);
+                document.getElementById('hint-count').innerText = remainingHints;
+                
+                if(remainingHints <= 0) {
+                    let hBtn = document.getElementById('hint-btn');
+                    hBtn.disabled = true;
+                    hBtn.className = "bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-700 transition opacity-50";
+                    hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 opacity-50"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline opacity-50">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300 opacity-50">0</span>`;
+                }
+                refreshDashboardUI();
+            }
+        }
+
+        function initGame(mode) {
+            currentGameMode = mode;
+            document.getElementById('games-menu').classList.add('hidden');
+            document.getElementById('game-arena').classList.remove('hidden');
+            curQIdx = 0; gameScore = 0;
+            document.getElementById('arena-score').innerText = "0";
+
+            let hBtn = document.getElementById('hint-btn');
+
+            if(mode === 'mcq') {
+                sessionQ = getFreshQuestions('ep_pool_mcq', fullMCQData, 5);
+            }
+            else if(mode === 'jumble') {
+                sessionQ = getFreshQuestions('ep_pool_jumble', fullJumbleData, 5);
+            }
+            else if(mode === 'type') {
+                sessionQ = getFreshQuestions('ep_pool_type', fullTypeData, 5);
+            }
+            else if(mode === 'match') {
+                sessionQ = getFreshQuestions('ep_pool_match', fullMatchData, 5);
+            }
+            else if(mode === 'crossword') {
+                let savedCWData = localStorage.getItem('ep_cw_data');
+                let savedCWLevel = parseInt(localStorage.getItem('ep_cw_lvl_saved')) || 0;
+                
+                if (cwCurrentLevel === savedCWLevel && savedCWData) {
+                    cwLevelData = JSON.parse(savedCWData);
+                    cwFoundWords = JSON.parse(localStorage.getItem('ep_cw_found') || "[]");
+                    cwBonusWords = JSON.parse(localStorage.getItem('ep_cw_bonus') || "[]");
+                    gameScore = cwFoundWords.length;
+                    document.getElementById('arena-score').innerText = gameScore;
+                } else {
+                    cwLevelData = getCrossWordLevelData(cwCurrentLevel);
+                    // Dynamically scramble word uniquely
+                    let arr = cwLevelData.l.split('');
+                    do { arr.sort(()=>0.5-Math.random()); } while (arr.join('') === cwLevelData.l && arr.length > 1);
+                    cwLevelData.scrambled = arr.join('');
+                    cwFoundWords = []; cwBonusWords = [];
+                    
+                    localStorage.setItem('ep_cw_data', JSON.stringify(cwLevelData));
+                    localStorage.setItem('ep_cw_lvl_saved', cwCurrentLevel);
+                    localStorage.setItem('ep_cw_found', JSON.stringify(cwFoundWords));
+                    localStorage.setItem('ep_cw_bonus', JSON.stringify(cwBonusWords));
+                }
+            } else if (mode === 'wordsearch') {
+                let savedWSLevel = parseInt(localStorage.getItem('ep_ws_lvl_saved')) || 0;
+                let savedWSData = localStorage.getItem('ep_ws_data');
+                
+                if(wsCurrentLevel === savedWSLevel && savedWSData) {
+                    wsLevelData = savedWSData;
+                    wsGrid = JSON.parse(localStorage.getItem('ep_ws_grid'));
+                    wsFoundWords = JSON.parse(localStorage.getItem('ep_ws_found') || "[]");
+                    gameScore = wsFoundWords.length;
+                    document.getElementById('arena-score').innerText = gameScore;
+                } else {
+                    wsLevelData = wordSearchDB[(wsCurrentLevel - 1) % wordSearchDB.length];
+                    wsGrid = generateWSGrid(wsLevelData.split('|')[1]);
+                    wsFoundWords = [];
+                    localStorage.setItem('ep_ws_data', wsLevelData);
+                    localStorage.setItem('ep_ws_grid', JSON.stringify(wsGrid));
+                    localStorage.setItem('ep_ws_lvl_saved', wsCurrentLevel);
+                    localStorage.setItem('ep_ws_found', JSON.stringify(wsFoundWords));
+                }
+                wsStartCell = null;
+                wsDragCurrent = null;
+                wsSolvedHighlights = [];
+            }
+
+            document.getElementById('hint-count').innerText = remainingHints;
+            if(remainingHints <= 0) {
+                hBtn.disabled = true;
+                hBtn.className = "bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-700 transition opacity-50";
+                hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 opacity-50"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline opacity-50">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300 opacity-50">0</span>`;
+            } else {
+                hBtn.disabled = false;
+                hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+            }
+
+            renderArenaCard();
+        }
+
+        function quitGame() {
+            document.getElementById('game-arena').classList.add('hidden');
+            document.getElementById('games-menu').classList.remove('hidden');
+            window.removeEventListener('mousemove', wsHandleMove);
+            window.removeEventListener('touchmove', wsHandleMove);
+            window.removeEventListener('mouseup', wsHandleEnd);
+            window.removeEventListener('touchend', wsHandleEnd);
+        }
+
+        function renderArenaCard() {
+            const alertBox = document.getElementById('arena-alert');
+            const nextBtn = document.getElementById('arena-next-btn');
+            alertBox.classList.add('hidden'); nextBtn.classList.add('hidden');
+
+            let optArea = document.getElementById('arena-options');
+            optArea.innerHTML = "";
+
+            if(currentGameMode === 'crossword') {
+                let lvlTag = "Level " + cwCurrentLevel;
+                document.getElementById('arena-tag').innerText = `${lvlTag}`;
+                document.getElementById('arena-question').innerHTML = `Form words from:<br><span class="text-3xl font-bold tracking-[0.3em] text-pink-400 mt-2 block">${cwLevelData.scrambled}</span>`;
+                
+                let boardHtml = `<div class="flex flex-col gap-3 w-full max-w-sm mx-auto mb-4" id="cw-board-slots">`;
+                cwLevelData.w.forEach((word, idx) => {
+                    if(cwFoundWords.includes(word)) {
+                        boardHtml += `<div id="cw-slot-${idx}" class="p-3 bg-emerald-500/20 border border-emerald-500 rounded-xl font-bold text-emerald-400 tracking-widest transition">${word}</div>`;
+                    } else {
+                        boardHtml += `<div id="cw-slot-${idx}" class="p-3 bg-slate-800/50 border border-slate-700 rounded-xl font-mono text-slate-500 tracking-widest transition">${"_ ".repeat(word.length).trim()}</div>`;
+                    }
+                });
+                boardHtml += `</div>`;
+
+                boardHtml += `<div class="flex flex-col gap-3 w-full max-w-sm mx-auto mt-4">
+                    <input type="text" id="cw-in" placeholder="Type word..." class="w-full uppercase font-bold text-center bg-slate-900 border border-pink-500/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-400">
+                    <button onclick="checkCWWord()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl font-bold text-white text-sm active:scale-95">Check</button>
+                </div>`;
+                
+                boardHtml += `
+                <div id="cw-bonus-section" class="w-full max-w-sm mx-auto mt-6 text-left ${cwBonusWords.length > 0 ? '' : 'hidden'}">
+                    <div class="text-[11px] text-amber-400 font-bold flex items-center gap-1.5 mb-2"><div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center"><i class="fa-solid fa-lightbulb"></i></div> Bonus Dictionary Words</div>
+                    <div id="cw-bonus-list" class="flex flex-wrap gap-1.5"></div>
+                </div>`;
+                
+                optArea.innerHTML = boardHtml;
+
+                if(cwBonusWords.length > 0) {
+                    setTimeout(() => {
+                        let bHtml = "";
+                        cwBonusWords.forEach(bw => { bHtml += `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-amber-300 text-xs font-bold">${bw}</span>`; });
+                        document.getElementById('cw-bonus-list').innerHTML = bHtml;
+                    }, 0);
+                }
+                return; 
+            } else if (currentGameMode === 'wordsearch') {
+                let parts = wsLevelData.split('|');
+                let theme = parts[0];
+                let words = parts[1].split(',');
+
+                document.getElementById('arena-tag').innerText = `Level ${wsCurrentLevel}/50`;
+                document.getElementById('arena-question').innerHTML = `Theme: <span class="text-indigo-400 font-bold ml-1">${theme}</span><br><span class="text-[10px] text-slate-400 font-normal mt-1 block">Drag over letters to select</span>`;
+                
+                let html = `<div class="flex flex-col gap-4 items-center justify-center w-full">`;
+                
+                html += `<div class="grid grid-cols-10 gap-1 bg-slate-900 p-2 rounded-xl border border-slate-800 relative mx-auto" id="ws-grid">`;
+                html += `<div id="ws-selection-line" style="opacity:0"></div>`;
+                for(let r=0; r<10; r++) {
+                    for(let c=0; c<10; c++) {
+                        html += `<div id="ws-${r}-${c}" data-r="${r}" data-c="${c}" class="ws-cell bg-slate-800 text-slate-200 touch-none select-none">${wsGrid[r][c]}</div>`;
+                    }
+                }
+                html += `</div>`;
+
+                html += `<div class="flex flex-wrap gap-2 justify-center w-full max-w-sm mx-auto" id="ws-word-list">`;
+                words.forEach((w, idx) => {
+                    let colorTheme = wsColors[idx % wsColors.length];
+                    let foundClass = wsFoundWords.includes(w) ? `${colorTheme.bg.replace('0.4','0.2')} text-white border-[${colorTheme.border}] line-through opacity-50` : "bg-slate-800 text-slate-400 border-slate-700";
+                    html += `<div id="ws-word-${w}" class="px-2 py-1 text-[10px] md:text-xs font-bold border rounded-lg ${foundClass} transition">${w}</div>`;
+                });
+                html += `</div></div>`;
+                
+                optArea.innerHTML = html;
+                
+                setTimeout(() => {
+                    let words = wsLevelData.split('|')[1].split(',');
+                    wsFoundWords.forEach(w => {
+                        let colorTheme = wsColors[words.indexOf(w) % wsColors.length];
+                        let dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[-1,1],[1,-1]];
+                        let foundPath = [];
+                        for(let r=0; r<10 && foundPath.length===0; r++) {
+                            for(let c=0; c<10 && foundPath.length===0; c++) {
+                                if(wsGrid[r][c] === w[0]) {
+                                    for(let d of dirs) {
+                                        let match = true; let tempPath = [];
+                                        for(let k=0; k<w.length; k++) {
+                                            let nr = r + d[0]*k; let nc = c + d[1]*k;
+                                            if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== w[k]) { match = false; break; }
+                                            tempPath.push({r: nr, c: nc});
+                                        }
+                                        if(match) { foundPath = tempPath; break; }
+                                    }
+                                }
+                            }
+                        }
+                        if(foundPath.length > 0) {
+                            addPermanentHighlight(foundPath[0], foundPath[foundPath.length-1], w, words.indexOf(w));
+                        }
+                    });
+
+                    let gridEl = document.getElementById('ws-grid');
+                    if(gridEl) {
+                        gridEl.addEventListener('mousedown', wsHandleStart);
+                        gridEl.addEventListener('touchstart', wsHandleStart, {passive: false});
+                    }
+                    window.addEventListener('mousemove', wsHandleMove);
+                    window.addEventListener('touchmove', wsHandleMove, {passive: false});
+                    window.addEventListener('mouseup', wsHandleEnd);
+                    window.addEventListener('touchend', wsHandleEnd);
+                }, 0);
+                
+                return;
+            }
+
+            if(curQIdx >= 5) {
+                document.getElementById('arena-tag').innerText = "Game Complete! 🎉";
+                document.getElementById('arena-question').innerHTML = `Final Score: ${gameScore}/5 <br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                optArea.innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="quitGame()" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-bold rounded-xl transition active:scale-95">Back to Arcade</button></div>`;
+                return;
+            }
+
+            document.getElementById('arena-tag').innerText = `Question ${curQIdx + 1}/5`;
+            const data = sessionQ[curQIdx];
+
+            if(currentGameMode === 'mcq') {
+                document.getElementById('arena-question').innerText = data.q;
+                let optsHtml = `<div class="w-full max-w-sm flex flex-col gap-3 mx-auto">`;
+                data.o.forEach((opt, idx) => {
+                    optsHtml += `<button onclick="checkMCQ(this, ${idx})" class="w-full p-3.5 bg-slate-900/90 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-sm font-medium text-left transition active:scale-95 opt-btn">${opt}</button>`;
+                });
+                optsHtml += `</div>`;
+                optArea.innerHTML = optsHtml;
+            } else if(currentGameMode === 'jumble') {
+                document.getElementById('arena-question').innerText = "Join words in correct order:";
+                jumbleAnswer = []; jumbleWords = data.split(" ").sort(()=>0.5-Math.random());
+                let buildHtml = `<div id="jumble-tray" class="min-h-[50px] w-full max-w-sm mx-auto bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 mb-4 justify-center items-center"></div><div id="jumble-pool" class="w-full max-w-sm mx-auto flex flex-wrap justify-center gap-2">`;
+                jumbleWords.forEach((w, i) => { buildHtml += `<button onclick="clickJumble('${w}', ${i}, this)" id="j-btn-${i}" class="word-btn px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg font-medium">${w}</button>`; });
+                buildHtml += `</div><div class="w-full max-w-sm mx-auto"><button onclick="checkJumble()" class="w-full mt-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-xl active:scale-95">Submit Sentence</button></div>`;
+                optArea.innerHTML = buildHtml;
+            } else if(currentGameMode === 'type') {
+                document.getElementById('arena-question').innerText = data.q;
+                optArea.innerHTML = `<div class="w-full max-w-sm mx-auto flex flex-col gap-3"><input type="text" id="type-ans-in" placeholder="Type the exact word..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-center text-white focus:outline-none focus:border-cyan-500 mb-2"><button onclick="checkType()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 font-bold rounded-xl text-black active:scale-95">Submit</button></div>`;
+            } else if(currentGameMode === 'match') {
+                document.getElementById('arena-question').innerText = `Identify the Tense: "${data.q}"`;
+                let pool = [...allTenseNames].sort(()=>0.5-Math.random()).slice(0,3);
+                if(!pool.includes(data.a)) pool[0] = data.a; 
+                else pool.push(allTenseNames.find(t=>!pool.includes(t)));
+                
+                let optsHtml = `<div class="w-full max-w-sm flex flex-col gap-3 mx-auto">`;
+                pool.sort(()=>0.5-Math.random()).forEach((v) => {
+                    optsHtml += `<button onclick="checkMatch(this, '${v}')" class="w-full p-3.5 bg-slate-900/90 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-sm font-medium text-center transition active:scale-95 opt-btn">${v}</button>`;
+                });
+                optsHtml += `</div>`;
+                optArea.innerHTML = optsHtml;
+            }
+        }
+
+        function checkCWWord() {
+            let inputF = document.getElementById('cw-in');
+            let uWord = inputF.value.trim().toUpperCase();
+            inputF.value = "";
+            let alertBox = document.getElementById('arena-alert');
+            
+            if(cwFoundWords.includes(uWord) || cwBonusWords.includes(uWord)) {
+                showArenaAlert(false, "Word already found!");
+                return;
+            }
+
+            if(cwLevelData.w.includes(uWord)) {
+                cwFoundWords.push(uWord);
+                localStorage.setItem('ep_cw_found', JSON.stringify(cwFoundWords)); 
+
+                gameScore++; document.getElementById('arena-score').innerText = gameScore;
+                showArenaAlert(true, "Awesome!");
+                
+                let slotIdx = cwLevelData.w.indexOf(uWord);
+                let slotEl = document.getElementById(`cw-slot-${slotIdx}`);
+                slotEl.className = "p-3 bg-emerald-500/20 border border-emerald-500 rounded-xl font-bold text-emerald-400 tracking-widest transition transform scale-105";
+                slotEl.innerText = uWord;
+                setTimeout(() => slotEl.classList.remove('scale-105', 'transform'), 300);
+                
+                if(cwFoundWords.length === cwLevelData.w.length) { 
+                    xpPoints += 100; userCoins += 50; 
+                    cwCurrentLevel++; 
+                    document.getElementById('cw-lvl-badge').innerText = cwCurrentLevel;
+                    refreshDashboardUI(); 
+                    
+                    setTimeout(() => {
+                        document.getElementById('arena-tag').innerText = "Level Complete! 🎉";
+                        document.getElementById('arena-question').innerHTML = `Amazing! You found all words.<br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                        document.getElementById('arena-options').innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="initGame('crossword')" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl active:scale-95 mt-4">Play Next Level</button></div>`;
+                        alertBox.classList.add('hidden');
+                    }, 500);
+                }
+            } else if (cwLevelData.a && cwLevelData.a.includes(uWord)) {
+                cwBonusWords.push(uWord);
+                localStorage.setItem('ep_cw_bonus', JSON.stringify(cwBonusWords)); 
+
+                xpPoints += 5; refreshDashboardUI();
+                showArenaAlert(true, "Bonus Dictionary Word! +5 XP 🌟");
+
+                document.getElementById('cw-bonus-section').classList.remove('hidden');
+                document.getElementById('cw-bonus-list').innerHTML += `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-amber-300 text-xs font-bold">${uWord}</span>`;
+            } else {
+                showArenaAlert(false, "Not in the puzzle dictionary!");
+            }
+        }
+
+        // === SHOW GREEN CORRECT ANSWER ALERT ===
+        function showArenaAlert(isCorrect, text, correctAns = null) {
+            const alertBox = document.getElementById('arena-alert');
+            if (isCorrect) {
+                alertBox.className = `mt-4 p-4 rounded-xl text-sm font-bold block text-center mx-auto w-full max-w-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`;
+                alertBox.innerHTML = `🎉 ${text}`;
+            } else {
+                alertBox.className = `mt-4 p-4 rounded-xl text-sm block text-center mx-auto w-full max-w-sm bg-red-500/10 border border-red-500/20`;
+                if (correctAns) {
+                    alertBox.innerHTML = `❌ <span class="font-bold text-red-400">${text}</span><br><span class="text-xs text-slate-300 mt-2 block">Correct Answer:</span><span class="text-emerald-400 font-black text-lg block mt-1">${correctAns}</span>`;
+                } else {
+                    alertBox.innerHTML = `❌ <span class="font-bold text-red-400">${text}</span>`;
+                }
+            }
+            alertBox.classList.remove('hidden');
+            if(isCorrect && (text.includes("Awesome") || text.includes("Bonus") || text.includes("Hint") || text.includes("Level Complete"))) {
+                 setTimeout(() => alertBox.classList.add('hidden'), 2000);
+            }
+        }
+
+        function levelComplete() {
+            wsCurrentLevel++; xpPoints += 100; userCoins += 50;
+            refreshDashboardUI();
+            
+            setTimeout(() => {
+                document.getElementById('arena-tag').innerText = "Level Complete! 🎉";
+                document.getElementById('arena-question').innerHTML = `Superb! You found all words.<br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                document.getElementById('arena-options').innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="initGame('wordsearch')" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-bold rounded-xl active:scale-95 mt-4">Play Next Level</button></div>`;
+                document.getElementById('arena-alert').classList.add('hidden');
+            }, 800);
+        }
+
+        function checkMCQ(btn, idx) {
+            document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+            let correctIdx = sessionQ[curQIdx].c;
+            let isCorrect = (idx === correctIdx);
+            
+            btn.classList.replace('bg-slate-900/90', isCorrect ? 'bg-emerald-900' : 'bg-red-900');
+            
+            if(!isCorrect) {
+                let correctBtn = document.querySelectorAll('.opt-btn')[correctIdx];
+                correctBtn.classList.replace('bg-slate-900/90', 'bg-emerald-900');
+                correctBtn.classList.add('border-emerald-500', 'text-emerald-400');
+            }
+            
+            showArenaAlert(isCorrect, isCorrect ? "Correct Answer!" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].o[correctIdx]);
+            if(isCorrect) gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function clickJumble(word, idx, btnObj) {
+            btnObj.classList.add('hidden'); jumbleAnswer.push({w: word, i: idx}); renderJumbleTray();
+        }
+        function removeJumble(arrIdx) {
+            let item = jumbleAnswer.splice(arrIdx, 1)[0];
+            document.getElementById(`j-btn-${item.i}`).classList.remove('hidden'); renderJumbleTray();
+        }
+        function renderJumbleTray() {
+            let tray = document.getElementById('jumble-tray'); tray.innerHTML = "";
+            jumbleAnswer.forEach((item, arrIdx) => { tray.innerHTML += `<span onclick="removeJumble(${arrIdx})" class="px-3 py-1 bg-cyan-600 text-white rounded-lg cursor-pointer">${item.w}</span>`; });
+        }
+
+        function checkJumble() {
+            let userStr = jumbleAnswer.map(i => i.w).join(" ");
+            let realStr = sessionQ[curQIdx];
+            let isCorrect = userStr === realStr;
+            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : realStr);
+            if(isCorrect) gameScore++;
+            document.getElementById('jumble-pool').innerHTML = ""; 
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function checkType() {
+            let uIn = document.getElementById('type-ans-in'); uIn.disabled = true;
+            let realAns = sessionQ[curQIdx].a.toLowerCase();
+            let isCorrect = uIn.value.trim().toLowerCase() === realAns;
+            
+            if(!isCorrect) {
+                uIn.value = sessionQ[curQIdx].a;
+                uIn.classList.add('text-emerald-400', 'border-emerald-500', 'font-bold');
+                uIn.classList.remove('text-white', 'border-slate-700');
+            } else {
+                uIn.classList.add('text-emerald-400');
+                uIn.classList.remove('text-white');
+            }
+            
+            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].a);
+            if(isCorrect) gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function checkMatch(btn, val) {
+            document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+            let correctVal = sessionQ[curQIdx].a;
+            let isCorrect = val === correctVal;
+            
+            btn.classList.replace('bg-slate-900/90', isCorrect ? 'bg-emerald-900' : 'bg-red-900');
+            
+            if(!isCorrect) {
+                document.querySelectorAll('.opt-btn').forEach(b => {
+                    if(b.innerText === correctVal) {
+                        b.classList.replace('bg-slate-900/90', 'bg-emerald-900');
+                        b.classList.add('border-emerald-500', 'text-emerald-400');
+                    }
+                });
+            }
+            
+            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : correctVal);
+            if(isCorrect) gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function nextGameLevel() { 
+            curQIdx++; 
+            if(curQIdx === 5 && !['wordsearch', 'crossword'].includes(currentGameMode)) {
+                xpPoints += 100;
+                userCoins += 50;
+                refreshDashboardUI();
+            }
+            renderArenaCard(); 
+        }
+    </script>
+</body>
+</html>
