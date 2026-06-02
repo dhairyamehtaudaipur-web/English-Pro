@@ -1,1 +1,6 @@
-
+{
+  "appId": "com.englishpro.ai",
+  "appName": "EnglishPro AI",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
