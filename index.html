@@ -98,7 +98,7 @@
                     <!-- Buy Hint Button -->
                     <button onclick="buyHint()" class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-xl flex flex-col items-center justify-center active:scale-95 transition shadow-lg whitespace-nowrap">
                         <span class="text-xs font-bold"><i class="fa-solid fa-cart-shopping mr-1"></i>Buy Hint</span>
-                        <span class="text-[9px] opacity-80 mt-0.5">-200 🪙</span>
+                        <span class="text-[9px] opacity-80 mt-0.5">200 🪙</span>
                     </button>
                 </div>
                 
@@ -189,7 +189,7 @@
                     <div class="flex gap-2.5 items-start">
                         <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div>
                         <div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 leading-relaxed">
-                            Namaste! Main aapka AI Guru hu. Ab mujhe poori Grammar aati hai! Aap kisi bhi topic ki <strong>Definition aur Types</strong> pooch sakte hain. Jaise: <br><br>👉 Noun, Verb, Adjective<br>👉 Preposition, Conjunction<br>👉 Tense (Present/Past/Future)<br>👉 Simple Past Tense<br>👉 Active Passive
+                            Welcome! I am your AI Guru. I possess comprehensive knowledge of English Grammar. You may ask me for definitions and types of any grammar topic. For example:<br><br>👉 Noun, Verb, Adjective<br>👉 Preposition, Conjunction<br>👉 Tenses (Present/Past/Future)<br>👉 Simple Past Tense<br>👉 Active and Passive Voice
                         </div>
                     </div>
                 </div>
@@ -501,30 +501,30 @@
         function closeLearning() { switchTab('dashboard'); }
 
         const aiKnowledge = {
-            "noun": "<strong>Noun (Sangya):</strong> Kisi bhi person, place, animal, idea, ya thing ke naam ko Noun kehte hain.<br><br><strong>Types:</strong><br>1. <u>Proper Noun:</u> Specific name (Rahul, Delhi).<br>2. <u>Common Noun:</u> General name (Boy, City).<br>3. <u>Collective Noun:</u> Group (Team, Army).<br>4. <u>Abstract Noun:</u> Feelings/Ideas (Honesty, Love).<br>5. <u>Material Noun:</u> Substance (Gold, Water).",
-            "pronoun": "<strong>Pronoun (Sarvnam):</strong> Noun ki jagah use hone wale words.<br><br><strong>Types:</strong><br>1. <u>Personal:</u> I, You, He, She, They.<br>2. <u>Reflexive:</u> Myself, Himself.<br>3. <u>Demonstrative:</u> This, That, These, Those.<br>4. <u>Relative:</u> Who, Which, That.<br>5. <u>Interrogative:</u> Who, What, Whom.",
-            "verb": "<strong>Verb (Kriya):</strong> Action ya state batane wale words.<br><br><strong>Types:</strong><br>1. <u>Action:</u> Run, Eat.<br>2. <u>Helping:</u> Is, Am, Are.<br>3. <u>Modal:</u> Can, Should.<br>4. <u>Transitive:</u> Needs object (He ate an apple).<br>5. <u>Intransitive:</u> No object (She smiled).",
-            "adjective": "<strong>Adjective (Visheshan):</strong> Noun/Pronoun ki quality batate hain.<br><br><strong>Types:</strong><br>1. <u>Descriptive:</u> Brave, Beautiful.<br>2. <u>Quantitative:</u> Some, Much.<br>3. <u>Demonstrative:</u> This, That.<br>4. <u>Possessive:</u> My, His.",
-            "adverb": "<strong>Adverb (Kriya Visheshan):</strong> Verb, Adjective ya Adverb ki khasiyat bataye.<br><br><strong>Types:</strong><br>1. <u>Time:</u> Yesterday, Now.<br>2. <u>Place:</u> Here, Everywhere.<br>3. <u>Manner:</u> Slowly, Quickly.<br>4. <u>Degree:</u> Very, Too.",
-            "preposition": "<strong>Preposition:</strong> Noun/Pronoun ka relation batate hain.<br><br><strong>Types:</strong><br>1. <u>Time:</u> In, On, At.<br>2. <u>Place:</u> Under, Over, Inside.<br>3. <u>Direction:</u> To, Into, Towards.",
-            "conjunction": "<strong>Conjunction (Samuchyabodhak):</strong> Sentences/words ko jodne wale words.<br><br><strong>Types:</strong><br>1. <u>Coordinating:</u> And, But, Or.<br>2. <u>Subordinating:</u> Because, Although, If.",
-            "interjection": "<strong>Interjection:</strong> Sudden feelings express karte hain.<br><br><strong>Examples:</strong> Wow!, Alas!, Ouch!, Hurray!",
-            "tense": "<strong>Tense (Kaal):</strong> Time of action. 3 main types: Present, Past, Future. Har ek ke 4 subtypes: Simple, Continuous, Perfect, Perfect Continuous.",
-            "simple present": "<strong>Simple Present Tense:</strong> Daily habits/universal truth.<br><em>Rule:</em> Sub + V1(s/es) + Obj.<br><em>Ex:</em> He plays cricket.",
-            "present continuous": "<strong>Present Continuous Tense:</strong> Jo abhi chal raha hai.<br><em>Rule:</em> Sub + is/am/are + V1+ing + Obj.<br><em>Ex:</em> He is playing.",
-            "present perfect": "<strong>Present Perfect Tense:</strong> Jo abhi-abhi khatam hua.<br><em>Rule:</em> Sub + has/have + V3 + Obj.<br><em>Ex:</em> He has played.",
-            "present perfect continuous": "<strong>Present Perfect Continuous Tense:</strong> Pehle shuru hua aur abhi tak chal raha hai.<br><em>Rule:</em> Sub + has/have been + V1+ing + since/for.<br><em>Ex:</em> He has been playing since morning.",
-            "simple past": "<strong>Simple Past Tense:</strong> Jo bhootkaal me ho gaya.<br><em>Rule:</em> Sub + V2 + Obj.<br><em>Ex:</em> He played.",
-            "past continuous": "<strong>Past Continuous Tense:</strong> Paast me chal raha tha.<br><em>Rule:</em> Sub + was/were + V1+ing.<br><em>Ex:</em> He was playing.",
-            "past perfect": "<strong>Past Perfect Tense:</strong> Paast me kisi aur kaam se pehle khatam ho gaya tha.<br><em>Rule:</em> Sub + had + V3.<br><em>Ex:</em> He had played.",
-            "past perfect continuous": "<strong>Past Perfect Continuous Tense:</strong> Paast me lamba chala.<br><em>Rule:</em> Sub + had been + V1+ing.<br><em>Ex:</em> He had been playing.",
-            "simple future": "<strong>Simple Future Tense:</strong> Jo aage hoga.<br><em>Rule:</em> Sub + will/shall + V1.<br><em>Ex:</em> He will play.",
-            "future continuous": "<strong>Future Continuous Tense:</strong> Future me chal raha hoga.<br><em>Rule:</em> Sub + will be + V1+ing.<br><em>Ex:</em> He will be playing.",
-            "future perfect": "<strong>Future Perfect Tense:</strong> Future me khatam ho chuka hoga.<br><em>Rule:</em> Sub + will have + V3.<br><em>Ex:</em> He will have played.",
-            "future perfect continuous": "<strong>Future Perfect Continuous Tense:</strong> Future me kisi time tak chal raha hoga.<br><em>Rule:</em> Sub + will have been + V1+ing.<br><em>Ex:</em> He will have been playing.",
-            "active passive": "<strong>Active/Passive Voice:</strong><br>1. <u>Active:</u> Subject acts. (He writes a letter)<br>2. <u>Passive:</u> Object receives action. (A letter is written by him).",
-            "direct indirect": "<strong>Direct/Indirect Speech:</strong><br>1. <u>Direct:</u> Exact words. (He said, \"I go\")<br>2. <u>Indirect:</u> Reported. (He said that he went).",
-            "hello": "Hello! Kahiye main aapki Grammar seekhne me kaise madad karu? Aap Noun, Verb, ya kisi Tense ke baare me pooch sakte hain."
+            "noun": "<strong>Noun:</strong> A noun is a word that represents a person, place, thing, or idea.<br><br><strong>Types of Nouns:</strong><br>1. <u>Proper Noun:</u> A specific name for a particular person, place, or thing (e.g., London, John). Always capitalized.<br>2. <u>Common Noun:</u> A general name for a person, place, or thing in a class or group (e.g., boy, city).<br>3. <u>Collective Noun:</u> A word that refers to a group or collection of people or things (e.g., team, army, flock).<br>4. <u>Abstract Noun:</u> A noun denoting an idea, quality, or state rather than a concrete object (e.g., truth, danger, happiness).<br>5. <u>Material Noun:</u> Refers to a material or substance from which things are made (e.g., gold, iron, cotton).",
+            "pronoun": "<strong>Pronoun:</strong> A pronoun is a word that takes the place of a noun in a sentence to avoid repetition.<br><br><strong>Types of Pronouns:</strong><br>1. <u>Personal Pronouns:</u> Represent specific people or things (I, you, he, she, it, we, they).<br>2. <u>Reflexive Pronouns:</u> Used when the subject and object are the same (myself, himself).<br>3. <u>Demonstrative Pronouns:</u> Point to specific objects (this, that, these, those).<br>4. <u>Relative Pronouns:</u> Connect a clause or phrase to a noun or pronoun (who, whom, which, that).<br>5. <u>Interrogative Pronouns:</u> Used to ask questions (who, what, which).",
+            "verb": "<strong>Verb:</strong> A verb is a word used to describe an action, state, or occurrence.<br><br><strong>Types of Verbs:</strong><br>1. <u>Action Verbs:</u> Express physical or mental actions (run, think, jump).<br>2. <u>Helping (Auxiliary) Verbs:</u> Used with a main verb to help express the main verb's tense, mood, or voice (is, am, are, have, has).<br>3. <u>Modal Verbs:</u> Express necessity or possibility (must, shall, will, should, would, can, could, may, might).<br>4. <u>Transitive Verbs:</u> Require a direct object to complete their meaning (She <em>read</em> the book).<br>5. <u>Intransitive Verbs:</u> Do not require a direct object (He <em>slept</em>).",
+            "adjective": "<strong>Adjective:</strong> An adjective is a word that modifies, describes, or limits a noun or pronoun.<br><br><strong>Types of Adjectives:</strong><br>1. <u>Descriptive Adjectives:</u> Describe qualities (a <em>brave</em> person, a <em>beautiful</em> flower).<br>2. <u>Quantitative Adjectives:</u> Indicate the amount or quantity (<em>some</em> water, <em>much</em> time).<br>3. <u>Demonstrative Adjectives:</u> Point out specific nouns (<em>this</em> pen, <em>that</em> tree).<br>4. <u>Possessive Adjectives:</u> Show ownership (<em>my</em> car, <em>his</em> book).",
+            "adverb": "<strong>Adverb:</strong> An adverb is a word that modifies a verb, an adjective, or another adverb, expressing manner, place, time, or degree.<br><br><strong>Types of Adverbs:</strong><br>1. <u>Adverbs of Time:</u> Answer 'when' (yesterday, tomorrow, now).<br>2. <u>Adverbs of Place:</u> Answer 'where' (here, there, everywhere).<br>3. <u>Adverbs of Manner:</u> Answer 'how' (slowly, quickly, bravely).<br>4. <u>Adverbs of Degree:</u> Answer 'how much' (very, almost, entirely).",
+            "preposition": "<strong>Preposition:</strong> A preposition is a word placed before a noun or pronoun to form a phrase modifying another word in the sentence, typically indicating direction, time, place, location, or spatial relationships.<br><br><strong>Types of Prepositions:</strong><br>1. <u>Time:</u> in, on, at (e.g., at 5 PM).<br>2. <u>Place/Direction:</u> to, towards, into, over, under.",
+            "conjunction": "<strong>Conjunction:</strong> A conjunction is a word used to connect clauses, sentences, phrases, or words together.<br><br><strong>Types of Conjunctions:</strong><br>1. <u>Coordinating Conjunctions:</u> Connect items of equal grammatical rank (for, and, nor, but, or, yet, so - FANBOYS).<br>2. <u>Subordinating Conjunctions:</u> Connect a dependent clause to an independent clause (because, although, if, since).",
+            "interjection": "<strong>Interjection:</strong> An interjection is a word or expression that occurs as an utterance on its own and expresses a spontaneous feeling or reaction.<br><br><strong>Examples:</strong> Wow!, Alas!, Ouch!, Hurray!",
+            "tense": "<strong>Tense:</strong> Tense is a grammatical category that indicates the time of a state or action. <br><br>There are three primary tenses in English: <strong>Present, Past, and Future</strong>. Each of these is subdivided into four aspects:<br>1. Simple (Indefinite)<br>2. Continuous (Progressive)<br>3. Perfect<br>4. Perfect Continuous.",
+            "simple present": "<strong>Simple Present Tense:</strong> Used to describe habits, unchanging situations, general truths, and fixed arrangements.<br><br><em>Rule:</em> Subject + V1 (s/es) + Object.<br><em>Example:</em> He plays cricket every evening.",
+            "present continuous": "<strong>Present Continuous Tense:</strong> Used to describe an action that is happening right now, at the exact moment of speech.<br><br><em>Rule:</em> Subject + is/am/are + V1+ing + Object.<br><em>Example:</em> She is reading a book.",
+            "present perfect": "<strong>Present Perfect Tense:</strong> Used to express an action that happened at an unspecified time before now, or an action that began in the past and continues to the present.<br><br><em>Rule:</em> Subject + has/have + V3 (Past Participle) + Object.<br><em>Example:</em> They have finished their homework.",
+            "present perfect continuous": "<strong>Present Perfect Continuous Tense:</strong> Shows that something started in the past and is continuing at the present time.<br><br><em>Rule:</em> Subject + has/have + been + V1+ing + since/for + Time.<br><em>Example:</em> I have been waiting for two hours.",
+            "simple past": "<strong>Simple Past Tense:</strong> Used to talk about a completed action in a time before now.<br><br><em>Rule:</em> Subject + V2 (Past form) + Object.<br><em>Example:</em> We visited Paris last year.",
+            "past continuous": "<strong>Past Continuous Tense:</strong> Describes actions or events in a time before now, which began in the past and were still going on when another event occurred.<br><br><em>Rule:</em> Subject + was/were + V1+ing + Object.<br><em>Example:</em> I was watching TV when she called.",
+            "past perfect": "<strong>Past Perfect Tense:</strong> Used to make it clear that one event happened before another in the past.<br><br><em>Rule:</em> Subject + had + V3 (Past Participle) + Object.<br><em>Example:</em> The train had left before we reached the station.",
+            "past perfect continuous": "<strong>Past Perfect Continuous Tense:</strong> Shows that an ongoing action in the past has ended.<br><br><em>Rule:</em> Subject + had + been + V1+ing + since/for.<br><em>Example:</em> He had been working there for five years before he resigned.",
+            "simple future": "<strong>Simple Future Tense:</strong> Refers to a time later than now, and expresses facts or certainty.<br><br><em>Rule:</em> Subject + will/shall + V1 + Object.<br><em>Example:</em> I will send you the report tomorrow.",
+            "future continuous": "<strong>Future Continuous Tense:</strong> Describes an unfinished action that will be in progress at a time later than now.<br><br><em>Rule:</em> Subject + will/shall + be + V1+ing + Object.<br><em>Example:</em> I will be attending the conference next week.",
+            "future perfect": "<strong>Future Perfect Tense:</strong> Used to describe an event that is expected or planned to happen before a time of reference in the future.<br><br><em>Rule:</em> Subject + will/shall + have + V3 + Object.<br><em>Example:</em> She will have graduated by next summer.",
+            "future perfect continuous": "<strong>Future Perfect Continuous Tense:</strong> Used to project ourselves forward in time and look back. It refers to events or actions that are currently unfinished but will be finished at some future time.<br><br><em>Rule:</em> Subject + will/shall + have + been + V1+ing + since/for.<br><em>Example:</em> By next month, I will have been living here for ten years.",
+            "active passive": "<strong>Voice (Active and Passive):</strong><br><br>1. <u>Active Voice:</u> The subject performs the action stated by the verb. <br><em>Example:</em> Shakespeare wrote the play.<br>2. <u>Passive Voice:</u> The subject is acted upon by the verb.<br><em>Example:</em> The play was written by Shakespeare.<br><em>General Rule for Conversion:</em> Object + Auxiliary Verb + V3 (Past Participle) + by + Subject.",
+            "direct indirect": "<strong>Speech (Direct and Indirect):</strong><br><br>1. <u>Direct Speech:</u> Quoting the exact words spoken by a person, enclosed in quotation marks. <br><em>Example:</em> He said, \"I am reading a book.\"<br>2. <u>Indirect (Reported) Speech:</u> Expressing the content of statements without quoting them explicitly. Changes in tense and pronouns usually occur.<br><em>Example:</em> He said that he was reading a book.",
+            "hello": "Hello! How may I assist you with your English Grammar studies today? You can inquire about any specific topic such as Nouns, Verbs, or Tenses."
         };
 
         function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
@@ -537,7 +537,7 @@
             chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
 
             setTimeout(() => {
-                let answer = "Maaf karna, main sirf Grammar janta hu. Kripya puchein jaise: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', ya 'Active Passive'.";
+                let answer = "I apologize, but my knowledge is currently restricted to English Grammar. Please inquire about topics such as: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', or 'Active Passive'.";
                 let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
                 for(let key of keys) { 
                     if(msg.includes(key)) { 
@@ -1054,7 +1054,6 @@
             drawGeometricLine(highlightId, start, end, color);
             wsSolvedHighlights.push(highlightEl);
             
-            // Turn actual letters white so they pop over the highlight
             let dr = end.r - start.r, dc = end.c - start.c;
             let len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
             let stepR = dr === 0 ? 0 : dr / Math.abs(dr);
@@ -1121,7 +1120,7 @@
                     if(foundPath && foundPath.length > 0) {
                          let startEl = document.getElementById(`ws-${foundPath[0].r}-${foundPath[0].c}`);
                          let origColor = startEl.style.color;
-                         startEl.style.color = '#f59e0b'; // Amber pulse
+                         startEl.style.color = '#f59e0b'; 
                          setTimeout(() => startEl.style.color = origColor, 2000);
                          showArenaAlert(true, `Hint: Look for '${unfound}' starting at highlighted letter!`);
                          hintUsed = true;
@@ -1177,7 +1176,6 @@
                     document.getElementById('arena-score').innerText = gameScore;
                 } else {
                     cwLevelData = getCrossWordLevelData(cwCurrentLevel);
-                    // Dynamically scramble word uniquely
                     let arr = cwLevelData.l.split('');
                     do { arr.sort(()=>0.5-Math.random()); } while (arr.join('') === cwLevelData.l && arr.length > 1);
                     cwLevelData.scrambled = arr.join('');
