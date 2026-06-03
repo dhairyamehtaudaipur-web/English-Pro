@@ -33,9 +33,25 @@
         /* Loading Spinner */
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Custom Splash Screen */
+        #custom-splash { transition: opacity 0.5s ease-out; z-index: 9999; }
+        .splash-pulse { animation: pulseGlow 2s infinite; }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(6, 182, 212, 0); } 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); } }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]">
+<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="initApp()">
+
+    <div id="custom-splash" class="fixed inset-0 bg-[#090A0F] flex flex-col items-center justify-center">
+        <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full filter blur-[100px]"></div>
+        <div class="absolute bottom-10 right-0 w-72 h-72 bg-purple-500/20 rounded-full filter blur-[100px]"></div>
+        
+        <div class="w-24 h-24 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-3xl flex items-center justify-center text-4xl text-black shadow-lg shadow-cyan-500/30 splash-pulse mb-6">
+            <i class="fa-solid fa-bolt"></i>
+        </div>
+        <h1 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 tracking-wider">EnglishPro</h1>
+        <p class="text-xs text-slate-400 mt-2 font-medium tracking-widest uppercase">Premium Learning</p>
+    </div>
 
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
@@ -44,7 +60,7 @@
     <div class="fixed -top-20 -left-20 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
     <div class="fixed bottom-10 right-0 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
 
-    <section id="auth-section" class="min-h-screen flex items-center justify-center p-4 relative z-50 flex-col">
+    <section id="auth-section" class="min-h-screen flex flex-col items-center justify-center p-4 relative z-50 hidden">
         <div class="w-full max-w-sm glass-morphic p-8 rounded-3xl neon-border relative overflow-hidden text-center">
             
             <h1 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-6 flex justify-center items-center">
@@ -53,6 +69,18 @@
 
             <div id="form-login" class="block space-y-4">
                 <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
+                
+                <button onclick="handleGoogleLogin()" class="w-full py-3 bg-white hover:bg-gray-100 text-black rounded-xl font-semibold text-sm transition flex items-center justify-center gap-3 shadow-md mb-4">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                    Continue with Google
+                </button>
+
+                <div class="flex items-center my-4">
+                    <div class="flex-1 border-t border-slate-700"></div>
+                    <span class="px-3 text-xs text-slate-500 font-medium uppercase">Or Email</span>
+                    <div class="flex-1 border-t border-slate-700"></div>
+                </div>
+
                 <input type="email" id="log-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition">
                 
                 <div class="relative">
@@ -76,6 +104,18 @@
 
             <div id="form-signup" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-4">Join EnglishPro 🚀</h2>
+                
+                <button onclick="handleGoogleLogin()" class="w-full py-3 bg-white hover:bg-gray-100 text-black rounded-xl font-semibold text-sm transition flex items-center justify-center gap-3 shadow-md mb-4">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                    Sign up with Google
+                </button>
+
+                <div class="flex items-center my-4">
+                    <div class="flex-1 border-t border-slate-700"></div>
+                    <span class="px-3 text-xs text-slate-500 font-medium uppercase">Or Email</span>
+                    <div class="flex-1 border-t border-slate-700"></div>
+                </div>
+
                 <input type="text" id="sign-name" placeholder="Full Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
                 <input type="email" id="sign-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
                 
@@ -124,6 +164,9 @@
                     <button onclick="switchTab('games')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-games">
                         <i class="fa-solid fa-gamepad w-6 text-lg"></i> Arcade Games
                     </button>
+                    <button onclick="switchTab('leaderboard')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-leaderboard">
+                        <i class="fa-solid fa-trophy w-6 text-lg"></i> Leaderboard
+                    </button>
                 </nav>
             </div>
             <div class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-2xl border border-slate-800 relative group cursor-pointer" onclick="handleLogout()">
@@ -139,7 +182,10 @@
             <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
                 <i class="fa-solid fa-bolt text-cyan-400 mr-1"></i>EnglishPro
             </h1>
-            <button onclick="handleLogout()" class="text-red-400 text-sm"><i class="fa-solid fa-right-from-bracket"></i></button>
+            <div class="flex gap-4 items-center">
+                <button onclick="switchTab('leaderboard')" class="text-amber-400 text-lg"><i class="fa-solid fa-trophy"></i></button>
+                <button onclick="handleLogout()" class="text-red-400 text-sm"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
         </header>
 
         <main class="flex-1 p-4 md:p-8 relative max-w-md mx-auto w-full md:max-w-none overflow-y-auto">
@@ -225,6 +271,12 @@
                     <p id="learn-desc" class="text-xs text-slate-400 mb-4">Desc</p>
                     <div id="learn-content" class="w-full"></div>
                 </div>
+            </section>
+
+            <section id="leaderboard" class="tab-content hidden relative">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-trophy text-amber-400"></i> Top Learners</h2>
+                <div class="glass-morphic p-4 rounded-3xl border border-slate-800" id="lb-container">
+                    </div>
             </section>
 
             <section id="ai-tutor" class="tab-content hidden flex flex-col h-[65vh] md:h-[78vh] relative">
@@ -331,7 +383,7 @@
             </section>
         </main>
 
-        <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-3 py-2.5 z-50 px-2 shrink-0">
+        <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-4 py-2.5 z-50 px-2 shrink-0">
             <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-dashboard">
                 <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[10px] font-medium">Home</span>
             </button>
@@ -341,8 +393,20 @@
             <button onclick="switchTab('games')" class="nav-btn-mob flex flex-col items-center gap-1 text-cyan-400" id="mob-games">
                 <i class="fa-solid fa-gamepad text-lg"></i><span class="text-[10px] font-semibold">Arcade</span>
             </button>
+            <button onclick="switchTab('leaderboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-leaderboard">
+                <i class="fa-solid fa-trophy text-lg"></i><span class="text-[10px] font-medium">Rank</span>
+            </button>
         </nav>
     </div> <script>
+        // --- 0. CUSTOM SPLASH SCREEN LOGIC ---
+        function initApp() {
+            setTimeout(() => {
+                const splash = document.getElementById('custom-splash');
+                splash.style.opacity = '0';
+                setTimeout(() => splash.classList.add('hidden'), 500);
+            }, 2500);
+        }
+
         // --- 1. FIREBASE SETUP & AUTH LOGIC ---
         const firebaseConfig = {
             apiKey: "AIzaSyAFr6ZULfTrqqn1lOBnk7woMhdwtdT9-cU",
@@ -368,7 +432,8 @@
                 document.getElementById('user-name-desk').innerText = displayName;
                 document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
                 
-                initAppSystem(); // Load game stats
+                initAppSystem(); // Load game stats & Ads
+                renderLeaderboard(displayName); // Load Leaderboard
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('app-layout').classList.add('hidden');
@@ -458,24 +523,99 @@
             btnLoading('btn-forgot', false, 'Send Reset Link');
         }
 
+        async function handleGoogleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                await auth.signInWithPopup(provider);
+                showToast("Logged in with Google!", true);
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+        }
+
         function handleLogout() {
             auth.signOut().then(() => showToast("Logged out", true));
         }
+
+        // --- 1.5 LEADERBOARD LOGIC ---
+        function renderLeaderboard(currentUserName) {
+            let myXP = parseInt(localStorage.getItem('ep_xp')) || 0;
+            // Generating dummy top users for demonstration
+            let users = [
+                { name: "Alex Hunter", xp: 12450, isMe: false },
+                { name: "Sarah Smith", xp: 11200, isMe: false },
+                { name: "David Miller", xp: 9800, isMe: false },
+                { name: "Emma Wilson", xp: 8500, isMe: false },
+                { name: "Chris Evans", xp: 7400, isMe: false },
+                { name: "Jessica Ray", xp: 6200, isMe: false },
+                { name: "Michael T.", xp: 5100, isMe: false },
+                { name: "Amanda K.", xp: 4800, isMe: false },
+                { name: currentUserName, xp: myXP, isMe: true }
+            ];
+            
+            // Sort by XP descending
+            users.sort((a, b) => b.xp - a.xp);
+            
+            let html = '<div class="space-y-3">';
+            users.forEach((u, idx) => {
+                let rank = idx + 1;
+                let rankColors = "bg-slate-800 text-slate-400";
+                if(rank === 1) rankColors = "bg-yellow-500/20 text-yellow-400 border border-yellow-500/50";
+                if(rank === 2) rankColors = "bg-slate-300/20 text-slate-300 border border-slate-300/50";
+                if(rank === 3) rankColors = "bg-amber-700/20 text-amber-500 border border-amber-700/50";
+
+                let meStyle = u.isMe ? "border-cyan-500/50 bg-cyan-900/20" : "border-slate-800 bg-slate-900/50";
+                
+                html += `
+                <div class="flex items-center justify-between p-3 rounded-xl border ${meStyle}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full ${rankColors} flex items-center justify-center font-bold text-sm">
+                            ${rank}
+                        </div>
+                        <div class="font-medium text-sm ${u.isMe ? 'text-cyan-400' : 'text-slate-200'}">
+                            ${u.name} ${u.isMe ? '(You)' : ''}
+                        </div>
+                    </div>
+                    <div class="text-xs font-bold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-lg">
+                        ${u.xp} XP
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            document.getElementById('lb-container').innerHTML = html;
+        }
+
 
         // --- 2. MAIN APP & GAME LOGIC ---
         let xpPoints = 0, userCoins = 0, streakDays = 0;
         let cwCurrentLevel = 1, wsCurrentLevel = 1;
         let remainingHints = 3; 
 
-        // AdMob Logic
+        // AdMob Logic using TEST IDs to guarantee ads load
         async function initAdMob() {
             if (!window.Capacitor || !Capacitor.Plugins.AdMob) return;
             const { AdMob } = Capacitor.Plugins;
             try {
                 await AdMob.initialize();
-                await AdMob.showBanner({ adId: 'ca-app-pub-1869144345266670/6281088450', adSize: 'BANNER', position: 'BOTTOM_CENTER', margin: 80, isTesting: false });
-                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-1869144345266670/9046852597', isTesting: false });
-                await AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-1869144345266670/9712381249', isTesting: false });
+                
+                // Using Official Google Test Ad IDs so they always show
+                await AdMob.showBanner({ 
+                    adId: 'ca-app-pub-3940256099942544/6300978111', // Test Banner ID
+                    adSize: 'BANNER', 
+                    position: 'BOTTOM_CENTER', 
+                    margin: 80, 
+                    isTesting: true 
+                });
+                
+                await AdMob.prepareInterstitial({ 
+                    adId: 'ca-app-pub-3940256099942544/1033173712', // Test Interstitial ID
+                    isTesting: true 
+                });
+                
+                await AdMob.prepareRewardVideoAd({ 
+                    adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded ID
+                    isTesting: true 
+                });
 
                 AdMob.addListener('onRewardedVideoAdReward', () => {
                     remainingHints++;
@@ -489,7 +629,7 @@
                         hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
                         hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
                     }
-                    AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-1869144345266670/9712381249', isTesting: false });
+                    AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-3940256099942544/5224354917', isTesting: true });
                 });
             } catch (e) { console.error('AdMob Error:', e); }
         }
@@ -499,7 +639,7 @@
             const { AdMob } = Capacitor.Plugins;
             try {
                 await AdMob.showInterstitial();
-                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-1869144345266670/9046852597', isTesting: false });
+                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-3940256099942544/1033173712', isTesting: true });
             } catch(e) {}
         }
 
@@ -518,7 +658,7 @@
         function showToast(msg, isSuccess) {
             let toast = document.getElementById('toast-msg');
             toast.innerText = msg;
-            toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
+            toast.className = `fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
             toast.style.opacity = '1';
             setTimeout(() => { toast.style.opacity = '0'; }, 2500);
         }
@@ -545,7 +685,6 @@
             }
         }
 
-        // Initialize user stats (called after auth success)
         function initAppSystem() {
             xpPoints = parseInt(localStorage.getItem('ep_xp')) || 0;
             userCoins = parseInt(localStorage.getItem('ep_coins')) || 0;
@@ -591,6 +730,9 @@
             localStorage.setItem('ep_coins', userCoins);
             localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
             localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
+
+            // Re-render leaderboard to update current user's score live
+            if(auth.currentUser) renderLeaderboard(auth.currentUser.displayName || auth.currentUser.email.split('@')[0]);
         }
 
         function switchTab(tabId) {
@@ -674,32 +816,6 @@
             "hello": "Hello! How may I assist you with your English Grammar studies today? You can inquire about any specific topic such as Nouns, Verbs, or Tenses."
         };
 
-        function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
-        function triggerChatAction() {
-            const chatBox = document.getElementById('chat-input');
-            let msg = chatBox.value.trim().toLowerCase();
-            if(!msg) return;
-            const stream = document.getElementById('chat-stream');
-            stream.innerHTML += `<div class="flex gap-2.5 flex-row-reverse items-start"><div class="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center font-bold text-black flex-shrink-0">S</div><div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-slate-100 shadow-md">${chatBox.value}</div></div>`;
-            chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
-
-            setTimeout(() => {
-                let answer = "I apologize, but my knowledge is currently restricted to English Grammar. Please inquire about topics such as: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', or 'Active Passive'.";
-                let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
-                for(let key of keys) { 
-                    if(msg.includes(key)) { 
-                        answer = aiKnowledge[key]; 
-                        break; 
-                    } 
-                }
-                stream.innerHTML += `<div class="flex gap-2.5 items-start"><div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div><div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 text-xs">${answer}</div></div>`;
-                stream.scrollTop = stream.scrollHeight;
-            }, 600);
-        }
-        function clearChat() { document.getElementById('chat-stream').innerHTML = ''; }
-
-
-        // === HUGE NON-REPEATING GAMES DATABASE ===
         const fullMCQData = [
             {q: "Neither Rahul nor his friends ____ present.", o: ["is", "are", "has", "have been"], c: 1},
             {q: "If I ____ a billionaire, I would travel the world.", o: ["am", "was", "were", "had been"], c: 2},
@@ -1005,7 +1121,7 @@
             "NATURE|ROCK,DIRT,SAND,MUD,CLAY,DUST,SOIL,PEAT"
         ];
 
-        let wsLevelData = null, wsGrid = [], wsFoundWords = [];
+        let wsGrid = [], wsFoundWords = [];
         let isWSDragging = false, wsDragStart = null, wsDragCurrent = null, wsSolvedHighlights = [];
 
         function generateWSGrid(wordsStr) {
@@ -1208,10 +1324,6 @@
             }
         }
 
-        let currentGameMode = "", sessionQ = [], curQIdx = 0, gameScore = 0;
-        let jumbleWords = [], jumbleAnswer = [];
-        let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
-
         function useHint() {
             if(remainingHints <= 0) return;
 
@@ -1296,18 +1408,10 @@
 
             let hBtn = document.getElementById('hint-btn');
 
-            if(mode === 'mcq') {
-                sessionQ = getFreshQuestions('ep_pool_mcq', fullMCQData, 5);
-            }
-            else if(mode === 'jumble') {
-                sessionQ = getFreshQuestions('ep_pool_jumble', fullJumbleData, 5);
-            }
-            else if(mode === 'type') {
-                sessionQ = getFreshQuestions('ep_pool_type', fullTypeData, 5);
-            }
-            else if(mode === 'match') {
-                sessionQ = getFreshQuestions('ep_pool_match', fullMatchData, 5);
-            }
+            if(mode === 'mcq') { sessionQ = getFreshQuestions('ep_pool_mcq', fullMCQData, 5); }
+            else if(mode === 'jumble') { sessionQ = getFreshQuestions('ep_pool_jumble', fullJumbleData, 5); }
+            else if(mode === 'type') { sessionQ = getFreshQuestions('ep_pool_type', fullTypeData, 5); }
+            else if(mode === 'match') { sessionQ = getFreshQuestions('ep_pool_match', fullMatchData, 5); }
             else if(mode === 'crossword') {
                 let savedCWData = localStorage.getItem('ep_cw_data');
                 let savedCWLevel = parseInt(localStorage.getItem('ep_cw_lvl_saved')) || 0;
@@ -1586,7 +1690,6 @@
             }
         }
 
-        // === SHOW GREEN CORRECT ANSWER ALERT ===
         function showArenaAlert(isCorrect, text, correctAns = null) {
             const alertBox = document.getElementById('arena-alert');
             if (isCorrect) {
