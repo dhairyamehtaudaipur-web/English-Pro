@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EnglishPro AI | Premium Grammar</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         body { font-family: 'Poppins', sans-serif; background-color: #090A0F; -webkit-tap-highlight-color: transparent; user-select: none; overflow-x: hidden;}
@@ -25,303 +27,502 @@
         }
         @media (max-width: 400px) { .ws-cell { width: 28px; height: 28px; font-size: 13px; } }
         
-        /* Premium Curved Line (Capsule Shape) - FRONT */
-        #ws-selection-line {
-            position: absolute; pointer-events: none; z-index: 20; 
-            border-radius: 9999px; 
-            transition: opacity 0.2s;
-        }
+        #ws-selection-line { position: absolute; pointer-events: none; z-index: 20; border-radius: 9999px; transition: opacity 0.2s; }
+        .ws-highlight-base { position: absolute; pointer-events: none; z-index: 20; border-radius: 9999px; }
         
-        /* Solved Word Highlighter Base Class - FRONT */
-        .ws-highlight-base {
-            position: absolute; pointer-events: none; z-index: 20;
-            border-radius: 9999px;
-        }
+        /* Loading Spinner */
+        .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0 overflow-x-hidden" onload="initStats()">
+<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]">
 
-    <!-- Toast Notification -->
-    <div id="toast-msg" class="fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[100] transition-opacity duration-300 opacity-0 pointer-events-none">
+    <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
     </div>
 
-    <!-- DESKTOP SIDEBAR -->
-    <aside class="w-64 glass-morphic hidden md:flex flex-col justify-between p-6 border-r border-slate-800 z-10">
-        <div>
-            <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-10">
+    <div class="fixed -top-20 -left-20 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-10 right-0 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+
+    <section id="auth-section" class="min-h-screen flex items-center justify-center p-4 relative z-50 flex-col">
+        <div class="w-full max-w-sm glass-morphic p-8 rounded-3xl neon-border relative overflow-hidden text-center">
+            
+            <h1 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-6 flex justify-center items-center">
                 <i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>EnglishPro
             </h1>
-            <nav class="space-y-3">
-                <button onclick="switchTab('dashboard')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/30 font-medium transition" id="desk-dashboard">
-                    <i class="fa-solid fa-house-chimney w-6 text-lg"></i> Dashboard
+
+            <div id="form-login" class="block space-y-4">
+                <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
+                <input type="email" id="log-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition">
+                
+                <div class="relative">
+                    <input type="password" id="log-pwd" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition pr-10">
+                    <i class="fa-solid fa-eye absolute right-4 top-3.5 text-slate-400 cursor-pointer hover:text-cyan-400 transition" onclick="toggleEye('log-pwd', this)"></i>
+                </div>
+
+                <div class="flex justify-between items-center text-xs text-slate-400 px-1">
+                    <label class="flex items-center gap-1.5 cursor-pointer hover:text-white transition">
+                        <input type="checkbox" id="log-remember" class="rounded accent-cyan-500" checked> Remember me
+                    </label>
+                    <button onclick="switchAuthView('forgot')" class="hover:text-cyan-400 transition font-medium">Forgot Password?</button>
+                </div>
+
+                <button id="btn-login" onclick="handleLogin()" class="w-full py-3.5 mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-sm text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition flex items-center justify-center gap-2">
+                    <span>Login</span>
                 </button>
-                <button onclick="switchTab('ai-tutor')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-ai-tutor">
-                    <i class="fa-solid fa-robot w-6 text-lg"></i> AI Guru
+
+                <p class="text-xs text-slate-400 mt-4">New here? <button onclick="switchAuthView('signup')" class="text-cyan-400 font-bold hover:underline">Create an account</button></p>
+            </div>
+
+            <div id="form-signup" class="hidden space-y-4">
+                <h2 class="text-xl font-bold mb-4">Join EnglishPro 🚀</h2>
+                <input type="text" id="sign-name" placeholder="Full Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
+                <input type="email" id="sign-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
+                
+                <div class="relative">
+                    <input type="password" id="sign-pwd" placeholder="Create Password" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition pr-10">
+                    <i class="fa-solid fa-eye absolute right-4 top-3.5 text-slate-400 cursor-pointer hover:text-purple-400 transition" onclick="toggleEye('sign-pwd', this)"></i>
+                </div>
+
+                <button id="btn-signup" onclick="handleSignup()" class="w-full py-3.5 mt-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl font-bold text-sm text-white shadow-lg shadow-purple-500/20 active:scale-95 transition flex items-center justify-center gap-2">
+                    <span>Sign Up</span>
                 </button>
-                <button onclick="switchTab('games')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-games">
-                    <i class="fa-solid fa-gamepad w-6 text-lg"></i> Arcade Games
+
+                <p class="text-xs text-slate-400 mt-4">Already have an account? <button onclick="switchAuthView('login')" class="text-purple-400 font-bold hover:underline">Login here</button></p>
+            </div>
+
+            <div id="form-forgot" class="hidden space-y-4">
+                <h2 class="text-xl font-bold mb-2">Reset Password 🔒</h2>
+                <p class="text-xs text-slate-400 mb-4">Enter your email to receive a reset link.</p>
+                
+                <input type="email" id="for-email" placeholder="Registered Email" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                
+                <button id="btn-forgot" onclick="handleForgot()" class="w-full py-3.5 mt-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl font-bold text-sm text-black shadow-lg shadow-amber-500/20 active:scale-95 transition flex items-center justify-center gap-2">
+                    <span>Send Reset Link</span>
                 </button>
-            </nav>
+
+                <p class="text-xs text-slate-400 mt-4"><button onclick="switchAuthView('login')" class="text-slate-300 font-medium hover:text-white transition"><i class="fa-solid fa-arrow-left mr-1"></i> Back to Login</button></p>
+            </div>
+
         </div>
-        <div class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-2xl border border-slate-800">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center font-bold text-black shadow-lg shadow-cyan-500/20">S</div>
+    </section>
+
+    <div id="app-layout" class="hidden w-full min-h-screen flex-col md:flex-row pb-20 md:pb-0 relative z-10">
+        
+        <aside class="w-64 glass-morphic hidden md:flex flex-col justify-between p-6 border-r border-slate-800 shrink-0">
             <div>
-                <p class="text-sm font-semibold">Student</p>
-                <p class="text-xs text-slate-400">Intermediate Level</p>
-            </div>
-        </div>
-    </aside>
-
-    <!-- MOBILE TOP BAR -->
-    <header class="md:hidden w-full glass-morphic px-5 py-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-900">
-        <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
-            <i class="fa-solid fa-bolt text-cyan-400 mr-1"></i>EnglishPro
-        </h1>
-    </header>
-
-    <!-- MAIN APP CONTAINER -->
-    <main class="flex-1 p-4 md:p-8 relative max-w-md mx-auto w-full md:max-w-none overflow-y-auto">
-        <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
-        <div class="absolute bottom-10 right-0 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
-
-        <!-- TAB 1: DASHBOARD -->
-        <section id="dashboard" class="tab-content block space-y-6 relative z-10">
-            <div class="bg-gradient-to-r from-purple-900/40 via-slate-900/80 to-cyan-900/40 p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
-                
-                <!-- Welcome Section with BUY HINT Button -->
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h2 class="text-2xl font-bold mb-1">Welcome! ✨</h2>
-                        <p class="text-xs text-slate-400">Complete challenges to earn XP.</p>
-                    </div>
-                    <!-- Buy Hint Button -->
-                    <button onclick="buyHint()" class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-xl flex flex-col items-center justify-center active:scale-95 transition shadow-lg whitespace-nowrap">
-                        <span class="text-xs font-bold"><i class="fa-solid fa-cart-shopping mr-1"></i>Buy Hint</span>
-                        <span class="text-[9px] opacity-80 mt-0.5">200 🪙</span>
+                <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-10">
+                    <i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>EnglishPro
+                </h1>
+                <nav class="space-y-3">
+                    <button onclick="switchTab('dashboard')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/30 font-medium transition" id="desk-dashboard">
+                        <i class="fa-solid fa-house-chimney w-6 text-lg"></i> Dashboard
                     </button>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-3 mt-5">
-                    <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
-                        <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">XP Points</span>
-                        <span id="dash-xp" class="text-lg font-bold text-cyan-400">0</span>
-                    </div>
-                    <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
-                        <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Streak</span>
-                        <span id="dash-streak" class="text-lg font-bold text-amber-400">0 🔥</span>
-                    </div>
-                    <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
-                        <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Coins</span>
-                        <span id="dash-coins" class="text-lg font-bold text-yellow-400 whitespace-nowrap block">0 🪙</span>
-                    </div>
-                </div>
-                
-                <!-- Display Global Hints on Dashboard -->
-                <div class="mt-3 text-center">
-                    <p class="text-[10px] text-slate-400">Available Hints: <span id="dash-hints" class="text-amber-400 font-bold">3 💡</span></p>
+                    <button onclick="switchTab('ai-tutor')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-ai-tutor">
+                        <i class="fa-solid fa-robot w-6 text-lg"></i> AI Guru
+                    </button>
+                    <button onclick="switchTab('games')" class="nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50" id="desk-games">
+                        <i class="fa-solid fa-gamepad w-6 text-lg"></i> Arcade Games
+                    </button>
+                </nav>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-2xl border border-slate-800 relative group cursor-pointer" onclick="handleLogout()">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center font-bold text-black shadow-lg shadow-cyan-500/20" id="user-avatar-desk">U</div>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-semibold truncate w-full" id="user-name-desk">User</p>
+                    <p class="text-xs text-red-400 group-hover:text-red-300 transition">Logout <i class="fa-solid fa-right-from-bracket ml-1"></i></p>
                 </div>
             </div>
+        </aside>
 
-            <div class="glass-morphic p-5 rounded-3xl neon-border">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <span class="bg-cyan-500/10 text-cyan-400 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full tracking-wider border border-cyan-500/20">Daily Challenge</span>
-                        <h3 class="text-lg font-bold mt-2">Play Arcade Games</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Test your Medium-level Grammar & Vocab</p>
-                    </div>
-                    <div class="text-3xl">🎮</div>
-                </div>
-                <button onclick="switchTab('games')" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-sm text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition mt-2">
-                    Open Games Arcade
-                </button>
-            </div>
+        <header class="md:hidden w-full glass-morphic px-5 py-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-900 shrink-0">
+            <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
+                <i class="fa-solid fa-bolt text-cyan-400 mr-1"></i>EnglishPro
+            </h1>
+            <button onclick="handleLogout()" class="text-red-400 text-sm"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </header>
 
-            <!-- LEARNING SECTION -->
-            <div class="mt-8">
-                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-book-open text-blue-400"></i> Learning Topics
-                </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div onclick="showLearning('gender')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-pink-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-pink-500/10 to-transparent">
-                        <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex justify-center items-center text-xl"><i class="fa-solid fa-venus-mars"></i></div>
-                        <div><h3 class="font-bold text-sm text-pink-400">Gender</h3><p class="text-[9px] text-slate-400 mt-1">Medium-Hard Words</p></div>
-                    </div>
-                    <div onclick="showLearning('plural')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-emerald-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-emerald-500/10 to-transparent">
-                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-clone"></i></div>
-                        <div><h3 class="font-bold text-sm text-emerald-400">Singular & Plural</h3><p class="text-[9px] text-slate-400 mt-1">Advanced Rules</p></div>
-                    </div>
-                    <div onclick="showLearning('collective')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-amber-500/10 to-transparent">
-                        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-users"></i></div>
-                        <div><h3 class="font-bold text-sm text-amber-400">Collective Nouns</h3><p class="text-[9px] text-slate-400 mt-1">Unique Groups</p></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB: STATIC LEARNING CONTENT -->
-        <section id="learning-section" class="tab-content hidden relative z-10">
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="closeLearning()" class="text-xs bg-slate-800 px-4 py-2.5 rounded-xl hover:bg-slate-700 transition flex items-center gap-1.5 shrink-0">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="font-bold">Back to Home</span>
-                </button>
-            </div>
+        <main class="flex-1 p-4 md:p-8 relative max-w-md mx-auto w-full md:max-w-none overflow-y-auto">
             
-            <div class="glass-morphic p-4 md:p-6 rounded-3xl border border-slate-800 relative">
-                <h2 id="learn-title" class="text-2xl font-bold text-cyan-400 mb-1">Title</h2>
-                <p id="learn-desc" class="text-xs text-slate-400 mb-4">Desc</p>
-                <div id="learn-content" class="w-full"></div>
-            </div>
-        </section>
-
-        <!-- TAB 2: AI TUTOR -->
-        <section id="ai-tutor" class="tab-content hidden flex flex-col h-[65vh] md:h-[78vh] relative z-10">
-            <div class="flex justify-between items-center mb-3">
-                <div>
-                    <h2 class="text-xl font-bold">AI Guru 🤖</h2>
-                    <p class="text-[11px] text-slate-400">Ask any grammar definition & types.</p>
-                </div>
-                <button onclick="clearChat()" class="text-xs text-slate-500 hover:text-slate-300"><i class="fa-solid fa-trash-can"></i> Clear</button>
-            </div>
-            
-            <div class="flex-1 bg-slate-900/40 rounded-3xl border border-slate-800/80 p-4 flex flex-col overflow-hidden relative">
-                <div id="chat-stream" class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
-                    <div class="flex gap-2.5 items-start">
-                        <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div>
-                        <div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 leading-relaxed">
-                            Welcome! I am your AI Guru. I possess comprehensive knowledge of English Grammar. You may ask me for definitions and types of any grammar topic. For example:<br><br>👉 Noun, Verb, Adjective<br>👉 Preposition, Conjunction<br>👉 Tenses (Present/Past/Future)<br>👉 Simple Past Tense<br>👉 Active and Passive Voice
+            <section id="dashboard" class="tab-content block space-y-6">
+                <div class="bg-gradient-to-r from-purple-900/40 via-slate-900/80 to-cyan-900/40 p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+                    
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-1">Welcome! ✨</h2>
+                            <p class="text-xs text-slate-400">Complete challenges to earn XP.</p>
                         </div>
+                        <button onclick="buyHint()" class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-xl flex flex-col items-center justify-center active:scale-95 transition shadow-lg whitespace-nowrap">
+                            <span class="text-xs font-bold"><i class="fa-solid fa-cart-shopping mr-1"></i>Buy Hint</span>
+                            <span class="text-[9px] opacity-80 mt-0.5">200 🪙</span>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3 mt-5">
+                        <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
+                            <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">XP Points</span>
+                            <span id="dash-xp" class="text-lg font-bold text-cyan-400 whitespace-nowrap block">0</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
+                            <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Streak</span>
+                            <span id="dash-streak" class="text-lg font-bold text-amber-400 whitespace-nowrap block">0 🔥</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
+                            <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Coins</span>
+                            <span id="dash-coins" class="text-lg font-bold text-yellow-400 whitespace-nowrap block">0 🪙</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <p class="text-[10px] text-slate-400">Available Hints: <span id="dash-hints" class="text-amber-400 font-bold">3 💡</span></p>
                     </div>
                 </div>
 
-                <div class="mt-3 flex gap-2 pt-2 bg-slate-950/20">
-                    <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
-                    <button onclick="triggerChatAction()" class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center font-bold text-black active:scale-95 transition flex-shrink-0">
-                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                <div class="glass-morphic p-5 rounded-3xl neon-border">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="bg-cyan-500/10 text-cyan-400 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full tracking-wider border border-cyan-500/20">Daily Challenge</span>
+                            <h3 class="text-lg font-bold mt-2">Play Arcade Games</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Test your Medium-level Grammar & Vocab</p>
+                        </div>
+                        <div class="text-3xl">🎮</div>
+                    </div>
+                    <button onclick="switchTab('games')" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-sm text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition mt-2">
+                        Open Games Arcade
                     </button>
                 </div>
-            </div>
-        </section>
 
-        <!-- TAB 3: GAMES ARCADE -->
-        <section id="games" class="tab-content hidden relative z-10">
-            <div id="games-menu">
-                <h2 class="text-2xl font-bold mb-4">Games Arcade 🕹️</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div onclick="initGame('mcq')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-cyan-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
-                        <div class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex justify-center items-center text-xl"><i class="fa-solid fa-list-check"></i></div>
-                        <div><h3 class="font-bold text-sm">Grammar Battle</h3><p class="text-[9px] text-slate-400">MCQ Quiz</p></div>
-                    </div>
-                    <div onclick="initGame('jumble')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-purple-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
-                        <div class="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex justify-center items-center text-xl"><i class="fa-solid fa-puzzle-piece"></i></div>
-                        <div><h3 class="font-bold text-sm">Word Jumble</h3><p class="text-[9px] text-slate-400">Sentence Building</p></div>
-                    </div>
-                    <div onclick="initGame('type')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-emerald-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
-                        <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-keyboard"></i></div>
-                        <div><h3 class="font-bold text-sm">Type Answer</h3><p class="text-[9px] text-slate-400">Fill in blanks</p></div>
-                    </div>
-                    <div onclick="initGame('match')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
-                        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-link"></i></div>
-                        <div><h3 class="font-bold text-sm">Tense Matcher</h3><p class="text-[9px] text-slate-400">All 12 Tenses</p></div>
-                    </div>
-                    
-                    <div onclick="initGame('crossword')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-pink-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-pink-500/10 to-transparent">
-                        <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex justify-center items-center text-xl"><i class="fa-solid fa-spell-check"></i></div>
-                        <div>
-                            <h3 class="font-bold text-sm text-pink-400">Cross Word</h3>
-                            <p class="text-[9px] text-slate-400">Lvl <span id="cw-lvl-badge">1</span></p>
+                <div class="mt-8">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-blue-400"></i> Learning Topics
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div onclick="showLearning('gender')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-pink-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-pink-500/10 to-transparent">
+                            <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex justify-center items-center text-xl"><i class="fa-solid fa-venus-mars"></i></div>
+                            <div><h3 class="font-bold text-sm text-pink-400">Gender</h3><p class="text-[9px] text-slate-400 mt-1">Medium-Hard Words</p></div>
                         </div>
-                    </div>
-
-                    <div onclick="initGame('wordsearch')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-indigo-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-bl from-indigo-500/10 to-transparent">
-                        <div class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex justify-center items-center text-xl"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <div>
-                            <h3 class="font-bold text-sm text-indigo-400">Word Search</h3>
-                            <p class="text-[9px] text-slate-400">Lvl <span id="ws-lvl-badge">1</span>/50</p>
+                        <div onclick="showLearning('plural')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-emerald-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-emerald-500/10 to-transparent">
+                            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-clone"></i></div>
+                            <div><h3 class="font-bold text-sm text-emerald-400">Singular & Plural</h3><p class="text-[9px] text-slate-400 mt-1">Advanced Rules</p></div>
+                        </div>
+                        <div onclick="showLearning('collective')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-amber-500/10 to-transparent">
+                            <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-users"></i></div>
+                            <div><h3 class="font-bold text-sm text-amber-400">Collective Nouns</h3><p class="text-[9px] text-slate-400 mt-1">Unique Groups</p></div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Game Playing Arena -->
-            <div id="game-arena" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <button onclick="quitGame()" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    
-                    <button id="hint-btn" onclick="useHint()" class="bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition">
-                        <i class="fa-solid fa-lightbulb text-amber-400"></i>
-                        <span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span>
-                        <span id="hint-count" class="text-xs font-black text-amber-300">3</span>
+            <section id="learning-section" class="tab-content hidden relative">
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="closeLearning()" class="text-xs bg-slate-800 px-4 py-2.5 rounded-xl hover:bg-slate-700 transition flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-arrow-left"></i> <span class="font-bold">Back to Home</span>
                     </button>
-
-                    <div class="bg-purple-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-purple-500/20">
-                        <span class="text-[10px] text-purple-400 font-bold uppercase hidden md:inline">Score:</span>
-                        <span id="arena-score" class="text-xs font-black text-purple-300">0</span>
-                    </div>
                 </div>
+                
+                <div class="glass-morphic p-4 md:p-6 rounded-3xl border border-slate-800 relative">
+                    <h2 id="learn-title" class="text-2xl font-bold text-cyan-400 mb-1">Title</h2>
+                    <p id="learn-desc" class="text-xs text-slate-400 mb-4">Desc</p>
+                    <div id="learn-content" class="w-full"></div>
+                </div>
+            </section>
 
-                <div class="glass-morphic p-4 md:p-6 rounded-3xl border border-slate-800 relative text-center">
-                    <div class="mb-4">
-                        <span id="arena-tag" class="px-2.5 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-md text-[10px] font-bold border border-cyan-500/20">Question 1/5</span>
+            <section id="ai-tutor" class="tab-content hidden flex flex-col h-[65vh] md:h-[78vh] relative">
+                <div class="flex justify-between items-center mb-3">
+                    <div>
+                        <h2 class="text-xl font-bold">AI Guru 🤖</h2>
+                        <p class="text-[11px] text-slate-400">Ask any grammar definition & types.</p>
                     </div>
-                    
-                    <h3 id="arena-question" class="text-lg font-semibold min-h-[40px] flex items-center justify-center flex-col text-slate-100 px-2 mb-4">Loading...</h3>
+                    <button onclick="clearChat()" class="text-xs text-slate-500 hover:text-slate-300"><i class="fa-solid fa-trash-can"></i> Clear</button>
+                </div>
+                
+                <div class="flex-1 bg-slate-900/40 rounded-3xl border border-slate-800/80 p-4 flex flex-col overflow-hidden relative">
+                    <div id="chat-stream" class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+                        <div class="flex gap-2.5 items-start">
+                            <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div>
+                            <div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 leading-relaxed">
+                                Welcome! I am your AI Guru. I possess comprehensive knowledge of English Grammar. You may ask me for definitions and types of any grammar topic. For example:<br><br>👉 Noun, Verb, Adjective<br>👉 Preposition, Conjunction<br>👉 Tenses (Present/Past/Future)<br>👉 Simple Past Tense<br>👉 Active and Passive Voice
+                            </div>
+                        </div>
+                    </div>
 
-                    <div id="arena-options" class="w-full"></div>
-                    
-                    <div id="arena-alert" class="mt-4 p-3 rounded-xl text-sm font-medium hidden mx-auto w-full max-w-sm"></div>
-
-                    <div class="w-full max-w-sm mx-auto">
-                        <button id="arena-next-btn" onclick="nextGameLevel()" class="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-xs rounded-xl active:scale-95 transition hidden">
-                            Next <i class="fa-solid fa-arrow-right ml-1"></i>
+                    <div class="mt-3 flex gap-2 pt-2 bg-slate-950/20">
+                        <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <button onclick="triggerChatAction()" class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center font-bold text-black active:scale-95 transition flex-shrink-0">
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-        </section>
-    </main>
+            </section>
 
-    <!-- MOBILE BOTTOM NAVIGATION -->
-    <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-3 py-2.5 z-50 px-2">
-        <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-dashboard">
-            <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[10px] font-medium">Home</span>
-        </button>
-        <button onclick="switchTab('ai-tutor')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-ai-tutor">
-            <i class="fa-solid fa-robot text-lg"></i><span class="text-[10px] font-medium">AI Guru</span>
-        </button>
-        <button onclick="switchTab('games')" class="nav-btn-mob flex flex-col items-center gap-1 text-cyan-400" id="mob-games">
-            <i class="fa-solid fa-gamepad text-lg"></i><span class="text-[10px] font-semibold">Arcade</span>
-        </button>
-    </nav>
+            <section id="games" class="tab-content hidden relative">
+                <div id="games-menu">
+                    <h2 class="text-2xl font-bold mb-4">Games Arcade 🕹️</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div onclick="initGame('mcq')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-cyan-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex justify-center items-center text-xl"><i class="fa-solid fa-list-check"></i></div>
+                            <div><h3 class="font-bold text-sm">Grammar Battle</h3><p class="text-[9px] text-slate-400">MCQ Quiz</p></div>
+                        </div>
+                        <div onclick="initGame('jumble')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-purple-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex justify-center items-center text-xl"><i class="fa-solid fa-puzzle-piece"></i></div>
+                            <div><h3 class="font-bold text-sm">Word Jumble</h3><p class="text-[9px] text-slate-400">Sentence Building</p></div>
+                        </div>
+                        <div onclick="initGame('type')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-emerald-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-keyboard"></i></div>
+                            <div><h3 class="font-bold text-sm">Type Answer</h3><p class="text-[9px] text-slate-400">Fill in blanks</p></div>
+                        </div>
+                        <div onclick="initGame('match')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-link"></i></div>
+                            <div><h3 class="font-bold text-sm">Tense Matcher</h3><p class="text-[9px] text-slate-400">All 12 Tenses</p></div>
+                        </div>
+                        
+                        <div onclick="initGame('crossword')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-pink-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-br from-pink-500/10 to-transparent">
+                            <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex justify-center items-center text-xl"><i class="fa-solid fa-spell-check"></i></div>
+                            <div>
+                                <h3 class="font-bold text-sm text-pink-400">Cross Word</h3>
+                                <p class="text-[9px] text-slate-400">Lvl <span id="cw-lvl-badge">1</span></p>
+                            </div>
+                        </div>
 
-    <!-- SYSTEM SCRIPT -->
-    <script>
+                        <div onclick="initGame('wordsearch')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-indigo-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2 bg-gradient-to-bl from-indigo-500/10 to-transparent">
+                            <div class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex justify-center items-center text-xl"><i class="fa-solid fa-magnifying-glass"></i></div>
+                            <div>
+                                <h3 class="font-bold text-sm text-indigo-400">Word Search</h3>
+                                <p class="text-[9px] text-slate-400">Lvl <span id="ws-lvl-badge">1</span>/50</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="game-arena" class="hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <button onclick="quitGame()" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        
+                        <button id="hint-btn" onclick="useHint()" class="bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                            <span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span>
+                            <span id="hint-count" class="text-xs font-black text-amber-300">3</span>
+                        </button>
+
+                        <div class="bg-purple-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-purple-500/20">
+                            <span class="text-[10px] text-purple-400 font-bold uppercase hidden md:inline">Score:</span>
+                            <span id="arena-score" class="text-xs font-black text-purple-300">0</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-morphic p-4 md:p-6 rounded-3xl border border-slate-800 relative text-center">
+                        <div class="mb-4">
+                            <span id="arena-tag" class="px-2.5 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-md text-[10px] font-bold border border-cyan-500/20">Question 1/5</span>
+                        </div>
+                        
+                        <h3 id="arena-question" class="text-lg font-semibold min-h-[40px] flex items-center justify-center flex-col text-slate-100 px-2 mb-4">Loading...</h3>
+
+                        <div id="arena-options" class="w-full"></div>
+                        
+                        <div id="arena-alert" class="mt-4 p-3 rounded-xl text-sm font-medium hidden mx-auto w-full max-w-sm"></div>
+
+                        <div class="w-full max-w-sm mx-auto">
+                            <button id="arena-next-btn" onclick="nextGameLevel()" class="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-xs rounded-xl active:scale-95 transition hidden">
+                                Next <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-3 py-2.5 z-50 px-2 shrink-0">
+            <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-dashboard">
+                <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[10px] font-medium">Home</span>
+            </button>
+            <button onclick="switchTab('ai-tutor')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-ai-tutor">
+                <i class="fa-solid fa-robot text-lg"></i><span class="text-[10px] font-medium">AI Guru</span>
+            </button>
+            <button onclick="switchTab('games')" class="nav-btn-mob flex flex-col items-center gap-1 text-cyan-400" id="mob-games">
+                <i class="fa-solid fa-gamepad text-lg"></i><span class="text-[10px] font-semibold">Arcade</span>
+            </button>
+        </nav>
+    </div> <script>
+        // --- 1. FIREBASE SETUP & AUTH LOGIC ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAFr6ZULfTrqqn1lOBnk7woMhdwtdT9-cU",
+            authDomain: "english-pro-b6012.firebaseapp.com",
+            projectId: "english-pro-b6012",
+            storageBucket: "english-pro-b6012.firebasestorage.app",
+            messagingSenderId: "112294349250",
+            appId: "1:112294349250:web:f15f05e6317a1fdc1f2e5b",
+            measurementId: "G-2Q44ESEDSX"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Listen for Auth State changes
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('flex');
+                
+                // Set User Name/Avatar
+                const displayName = user.displayName || user.email.split('@')[0];
+                document.getElementById('user-name-desk').innerText = displayName;
+                document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
+                
+                initAppSystem(); // Load game stats
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('flex');
+            }
+        });
+
+        function switchAuthView(view) {
+            document.getElementById('form-login').classList.add('hidden');
+            document.getElementById('form-signup').classList.add('hidden');
+            document.getElementById('form-forgot').classList.add('hidden');
+            document.getElementById(`form-${view}`).classList.remove('hidden');
+        }
+
+        function toggleEye(inputId, iconElement) {
+            const input = document.getElementById(inputId);
+            if(input.type === 'password') {
+                input.type = 'text';
+                iconElement.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                iconElement.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function btnLoading(btnId, isLoading, text) {
+            const btn = document.getElementById(btnId);
+            if(isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="loader"></span>`;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<span>${text}</span>`;
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('log-email').value.trim();
+            const pwd = document.getElementById('log-pwd').value;
+            const remember = document.getElementById('log-remember').checked;
+
+            if(!email || !pwd) return showToast("Please fill all fields", false);
+            
+            btnLoading('btn-login', true, 'Login');
+            try {
+                const persistence = remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+                await auth.setPersistence(persistence);
+                await auth.signInWithEmailAndPassword(email, pwd);
+                showToast("Logged in successfully!", true);
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+            btnLoading('btn-login', false, 'Login');
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('sign-name').value.trim();
+            const email = document.getElementById('sign-email').value.trim();
+            const pwd = document.getElementById('sign-pwd').value;
+
+            if(!name || !email || !pwd) return showToast("Please fill all fields", false);
+            if(pwd.length < 6) return showToast("Password must be at least 6 characters", false);
+
+            btnLoading('btn-signup', true, 'Sign Up');
+            try {
+                const userCred = await auth.createUserWithEmailAndPassword(email, pwd);
+                await userCred.user.updateProfile({ displayName: name });
+                showToast("Account created successfully!", true);
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+            btnLoading('btn-signup', false, 'Sign Up');
+        }
+
+        async function handleForgot() {
+            const email = document.getElementById('for-email').value.trim();
+            if(!email) return showToast("Enter registered email", false);
+
+            btnLoading('btn-forgot', true, 'Send Reset Link');
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showToast("Password reset link sent to email", true);
+                switchAuthView('login');
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+            btnLoading('btn-forgot', false, 'Send Reset Link');
+        }
+
+        function handleLogout() {
+            auth.signOut().then(() => showToast("Logged out", true));
+        }
+
+        // --- 2. MAIN APP & GAME LOGIC ---
         let xpPoints = 0, userCoins = 0, streakDays = 0;
         let cwCurrentLevel = 1, wsCurrentLevel = 1;
-        
-        // --- GLOBAL HINT SYSTEM ---
         let remainingHints = 3; 
 
-        // Premium Palette
+        // AdMob Logic
+        async function initAdMob() {
+            if (!window.Capacitor || !Capacitor.Plugins.AdMob) return;
+            const { AdMob } = Capacitor.Plugins;
+            try {
+                await AdMob.initialize();
+                await AdMob.showBanner({ adId: 'ca-app-pub-1869144345266670/6281088450', adSize: 'BANNER', position: 'BOTTOM_CENTER', margin: 80, isTesting: false });
+                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-1869144345266670/9046852597', isTesting: false });
+                await AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-1869144345266670/9712381249', isTesting: false });
+
+                AdMob.addListener('onRewardedVideoAdReward', () => {
+                    remainingHints++;
+                    localStorage.setItem('ep_global_hints', remainingHints);
+                    refreshDashboardUI();
+                    showToast("Free Hint Earned! (+1 💡)", true);
+                    
+                    if(!document.getElementById('game-arena').classList.contains('hidden')) {
+                        let hBtn = document.getElementById('hint-btn');
+                        hBtn.disabled = false;
+                        hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                        hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+                    }
+                    AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-1869144345266670/9712381249', isTesting: false });
+                });
+            } catch (e) { console.error('AdMob Error:', e); }
+        }
+
+        async function triggerInterstitial() {
+            if (!window.Capacitor || !Capacitor.Plugins.AdMob) return;
+            const { AdMob } = Capacitor.Plugins;
+            try {
+                await AdMob.showInterstitial();
+                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-1869144345266670/9046852597', isTesting: false });
+            } catch(e) {}
+        }
+
+        async function triggerRewarded() {
+            if (!window.Capacitor || !Capacitor.Plugins.AdMob) return showToast("Ads work in mobile app only!", false);
+            const { AdMob } = Capacitor.Plugins;
+            try { await AdMob.showRewardVideoAd(); } catch(e) { showToast("Ad loading, please try again.", false); }
+        }
+
         const wsColors = [
-            { bg: 'rgba(236, 72, 153, 0.4)', border: '#ec4899' }, 
-            { bg: 'rgba(6, 182, 212, 0.4)', border: '#06b6d4' },  
-            { bg: 'rgba(168, 85, 247, 0.4)', border: '#a855f7' }, 
-            { bg: 'rgba(16, 185, 129, 0.4)', border: '#10b981' }, 
-            { bg: 'rgba(245, 158, 11, 0.4)', border: '#f59e0b' }, 
-            { bg: 'rgba(239, 68, 68, 0.4)', border: '#ef4444' }   
+            { bg: 'rgba(236, 72, 153, 0.4)', border: '#ec4899' }, { bg: 'rgba(6, 182, 212, 0.4)', border: '#06b6d4' },  
+            { bg: 'rgba(168, 85, 247, 0.4)', border: '#a855f7' }, { bg: 'rgba(16, 185, 129, 0.4)', border: '#10b981' }, 
+            { bg: 'rgba(245, 158, 11, 0.4)', border: '#f59e0b' }, { bg: 'rgba(239, 68, 68, 0.4)', border: '#ef4444' }   
         ];
 
-        // --- TOAST NOTIFICATION ---
         function showToast(msg, isSuccess) {
             let toast = document.getElementById('toast-msg');
             toast.innerText = msg;
-            toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[100] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
+            toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
             toast.style.opacity = '1';
             setTimeout(() => { toast.style.opacity = '0'; }, 2500);
         }
 
-        // --- BUY HINT LOGIC ---
         function buyHint() {
             const cost = 200;
             if(userCoins >= cost) {
@@ -332,7 +533,6 @@
                 refreshDashboardUI();
                 showToast(`Hint Purchased! (+1 💡)`, true);
                 
-                // If in game, update hint button
                 if(!document.getElementById('game-arena').classList.contains('hidden')) {
                     let hBtn = document.getElementById('hint-btn');
                     hBtn.disabled = false;
@@ -340,31 +540,26 @@
                     hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
                 }
             } else {
-                showToast(`Not enough Coins! Need 200 🪙`, false);
+                showToast(`Not enough Coins! Loading Free Ad...`, false);
+                triggerRewarded();
             }
         }
 
-        function initStats() {
+        // Initialize user stats (called after auth success)
+        function initAppSystem() {
             xpPoints = parseInt(localStorage.getItem('ep_xp')) || 0;
             userCoins = parseInt(localStorage.getItem('ep_coins')) || 0;
             
-            // Initialize Global Hints safely
             let savedHints = localStorage.getItem('ep_global_hints');
-            if(savedHints !== null && !isNaN(savedHints)) {
-                remainingHints = parseInt(savedHints);
-            } else {
-                remainingHints = 3;
-                localStorage.setItem('ep_global_hints', 3);
-            }
+            if(savedHints !== null && !isNaN(savedHints)) { remainingHints = parseInt(savedHints); } 
+            else { remainingHints = 3; localStorage.setItem('ep_global_hints', 3); }
 
             cwCurrentLevel = parseInt(localStorage.getItem('ep_cw_lvl')) || 1;
             document.getElementById('cw-lvl-badge').innerText = cwCurrentLevel;
             
             if (!localStorage.getItem('ep_ws_save_fix_v4')) {
                 localStorage.setItem('ep_ws_save_fix_v4', '1');
-                localStorage.removeItem('ep_ws_data');
-                localStorage.removeItem('ep_ws_grid');
-                localStorage.removeItem('ep_ws_found');
+                localStorage.removeItem('ep_ws_data'); localStorage.removeItem('ep_ws_grid'); localStorage.removeItem('ep_ws_found');
             }
 
             wsCurrentLevel = parseInt(localStorage.getItem('ep_ws_lvl')) || 1;
@@ -377,13 +572,13 @@
             if (lastVisit !== today) {
                 if(lastVisit) {
                     let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-                    if (lastVisit === yesterday.toDateString()) streakDays += 1;
-                    else streakDays = 1;
+                    if (lastVisit === yesterday.toDateString()) streakDays += 1; else streakDays = 1;
                 } else streakDays = 1;
                 localStorage.setItem('ep_last_visit', today);
                 localStorage.setItem('ep_streak', streakDays);
             }
             refreshDashboardUI();
+            initAdMob();
         }
 
         function refreshDashboardUI() {
@@ -413,8 +608,6 @@
                 document.getElementById('learning-section').classList.add('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
             }
-            
-            // Refresh dashboard explicitly to sync hint counts
             refreshDashboardUI();
         }
 
@@ -422,63 +615,17 @@
             'gender': {
                 title: 'Gender (Masculine & Feminine)',
                 desc: 'Intermediate and Advanced Gender pairs:',
-                table: [
-                    ['Masculine (Male)', 'Feminine (Female)'],
-                    ['Stallion (Horse)', 'Mare'],
-                    ['Gander (Goose)', 'Goose'],
-                    ['Duke', 'Duchess'],
-                    ['Wizard', 'Witch'],
-                    ['Emperor', 'Empress'],
-                    ['Monk', 'Nun'],
-                    ['Drake (Duck)', 'Duck'],
-                    ['Fox', 'Vixen'],
-                    ['Ram (Sheep)', 'Ewe'],
-                    ['Rooster', 'Hen'],
-                    ['Nephew', 'Niece'],
-                    ['Hero', 'Heroine'],
-                    ['Host', 'Hostess'],
-                    ['Bachelor', 'Spinster']
-                ]
+                table: [['Masculine (Male)', 'Feminine (Female)'], ['Stallion (Horse)', 'Mare'], ['Gander (Goose)', 'Goose'], ['Duke', 'Duchess'], ['Wizard', 'Witch'], ['Emperor', 'Empress'], ['Monk', 'Nun'], ['Drake (Duck)', 'Duck'], ['Fox', 'Vixen'], ['Ram (Sheep)', 'Ewe'], ['Rooster', 'Hen'], ['Nephew', 'Niece'], ['Hero', 'Heroine'], ['Host', 'Hostess'], ['Bachelor', 'Spinster']]
             },
             'plural': {
                 title: 'Advanced Singular & Plural',
                 desc: 'Learn irregular and tricky plural nouns:',
-                table: [
-                    ['Singular (One)', 'Plural (Many)'],
-                    ['Syllabus', 'Syllabi'],
-                    ['Cactus', 'Cacti'],
-                    ['Criterion', 'Criteria'],
-                    ['Datum', 'Data'],
-                    ['Analysis', 'Analyses'],
-                    ['Oasis', 'Oases'],
-                    ['Fungus', 'Fungi'],
-                    ['Nucleus', 'Nuclei'],
-                    ['Phenomenon', 'Phenomena'],
-                    ['Index', 'Indices'],
-                    ['Thief', 'Thieves'],
-                    ['Goose', 'Geese'],
-                    ['Person', 'People'],
-                    ['Crisis', 'Crises']
-                ]
+                table: [['Singular (One)', 'Plural (Many)'], ['Syllabus', 'Syllabi'], ['Cactus', 'Cacti'], ['Criterion', 'Criteria'], ['Datum', 'Data'], ['Analysis', 'Analyses'], ['Oasis', 'Oases'], ['Fungus', 'Fungi'], ['Nucleus', 'Nuclei'], ['Phenomenon', 'Phenomena'], ['Index', 'Indices'], ['Thief', 'Thieves'], ['Goose', 'Geese'], ['Person', 'People'], ['Crisis', 'Crises']]
             },
             'collective': {
                 title: 'Unique Collective Nouns',
                 desc: 'Advanced group words for animals and things:',
-                table: [
-                    ['Group Description', 'Collective Noun Phrase'],
-                    ['A group of crows', 'A Murder of crows'],
-                    ['A group of owls', 'A Parliament of owls'],
-                    ['A group of geese', 'A Gaggle of geese'],
-                    ['A group of tigers', 'An Ambush of tigers'],
-                    ['A group of bears', 'A Sleuth of bears'],
-                    ['A group of hippos', 'A Bloat of hippos'],
-                    ['A group of cheetahs', 'A Coalition of cheetahs'],
-                    ['A group of parrots', 'A Pandemonium of parrots'],
-                    ['A group of jellyfish', 'A Smack of jellyfish'],
-                    ['A group of rhinos', 'A Crash of rhinos'],
-                    ['A group of frogs', 'An Army of frogs'],
-                    ['A group of wolves', 'A Pack of wolves']
-                ]
+                table: [['Group Description', 'Collective Noun Phrase'], ['A group of crows', 'A Murder of crows'], ['A group of owls', 'A Parliament of owls'], ['A group of geese', 'A Gaggle of geese'], ['A group of tigers', 'An Ambush of tigers'], ['A group of bears', 'A Sleuth of bears'], ['A group of hippos', 'A Bloat of hippos'], ['A group of cheetahs', 'A Coalition of cheetahs'], ['A group of parrots', 'A Pandemonium of parrots'], ['A group of jellyfish', 'A Smack of jellyfish'], ['A group of rhinos', 'A Crash of rhinos'], ['A group of frogs', 'An Army of frogs'], ['A group of wolves', 'A Pack of wolves']]
             }
         };
 
@@ -757,7 +904,6 @@
             return selected;
         }
 
-        // === CROSSWORD 100% UNIQUE LEVEL DATABASE WITH MASSIVE BONUS WORDS (a array) ===
         const cwMasterDB = [
             {l:"HEART", w:["HEART","EARTH","HEAR","TEAR","RATE"], a:["ART","EAR","EAT","ATE","TEA","HAT","RAT","TAR","HARE","ARE","ERA"]}, 
             {l:"WATER", w:["WATER","WEAR","TEAR","RATE"], a:["WAR","RAW","ART","RAT","TAR","EAT","ATE","TEA","ARE","ERA"]},
@@ -896,7 +1042,6 @@
             return grid;
         }
 
-        // --- WORD SEARCH CAPSULE CURVED LINE LOGIC ---
         function getCellFromCoords(x, y) {
             let el = document.elementFromPoint(x, y);
             if(el && el.closest('.ws-cell')) {
@@ -1063,7 +1208,6 @@
             }
         }
 
-        // === GAME ENGINE ===
         let currentGameMode = "", sessionQ = [], curQIdx = 0, gameScore = 0;
         let jumbleWords = [], jumbleAnswer = [];
         let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
@@ -1350,6 +1494,7 @@
                 document.getElementById('arena-tag').innerText = "Game Complete! 🎉";
                 document.getElementById('arena-question').innerHTML = `Final Score: ${gameScore}/5 <br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
                 optArea.innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="quitGame()" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-bold rounded-xl transition active:scale-95">Back to Arcade</button></div>`;
+                triggerInterstitial(); 
                 return;
             }
 
@@ -1424,6 +1569,7 @@
                         document.getElementById('arena-question').innerHTML = `Amazing! You found all words.<br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
                         document.getElementById('arena-options').innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="initGame('crossword')" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl active:scale-95 mt-4">Play Next Level</button></div>`;
                         alertBox.classList.add('hidden');
+                        triggerInterstitial(); 
                     }, 500);
                 }
             } else if (cwLevelData.a && cwLevelData.a.includes(uWord)) {
@@ -1469,6 +1615,7 @@
                 document.getElementById('arena-question').innerHTML = `Superb! You found all words.<br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
                 document.getElementById('arena-options').innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="initGame('wordsearch')" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-bold rounded-xl active:scale-95 mt-4">Play Next Level</button></div>`;
                 document.getElementById('arena-alert').classList.add('hidden');
+                triggerInterstitial();
             }, 800);
         }
 
