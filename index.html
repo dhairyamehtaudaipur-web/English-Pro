@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EnglishPro AI | Premium Grammar</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase Compat SDKs (Auth & Firestore for Live Leaderboard) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -46,7 +43,6 @@
 </head>
 <body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="initApp()">
 
-    <!-- CUSTOM SPLASH SCREEN -->
     <div id="custom-splash" class="fixed inset-0 bg-[#090A0F] flex flex-col items-center justify-center">
         <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full filter blur-[100px]"></div>
         <div class="absolute bottom-10 right-0 w-72 h-72 bg-purple-500/20 rounded-full filter blur-[100px]"></div>
@@ -58,16 +54,13 @@
         <p class="text-xs text-slate-400 mt-2 font-medium tracking-widest uppercase">Premium Learning</p>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
     </div>
 
-    <!-- BACKGROUND GLOWS (Shared across app) -->
     <div class="fixed -top-20 -left-20 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
     <div class="fixed bottom-10 right-0 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
 
-    <!-- ==================== AUTHENTICATION SECTION ==================== -->
     <section id="auth-section" class="min-h-screen flex flex-col items-center justify-center p-4 relative z-50 hidden">
         <div class="w-full max-w-sm glass-morphic p-8 rounded-3xl neon-border relative overflow-hidden text-center">
             
@@ -75,7 +68,6 @@
                 <i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>EnglishPro
             </h1>
 
-            <!-- LOGIN FORM -->
             <div id="form-login" class="block space-y-4">
                 <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
                 
@@ -111,7 +103,6 @@
                 <p class="text-xs text-slate-400 mt-4">New here? <button onclick="switchAuthView('signup')" class="text-cyan-400 font-bold hover:underline">Create an account</button></p>
             </div>
 
-            <!-- SIGNUP FORM -->
             <div id="form-signup" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-4">Join EnglishPro 🚀</h2>
                 
@@ -141,7 +132,6 @@
                 <p class="text-xs text-slate-400 mt-4">Already have an account? <button onclick="switchAuthView('login')" class="text-purple-400 font-bold hover:underline">Login here</button></p>
             </div>
 
-            <!-- FORGOT PASSWORD FORM -->
             <div id="form-forgot" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-2">Reset Password 🔒</h2>
                 <p class="text-xs text-slate-400 mb-4">Enter your email to receive a reset link.</p>
@@ -158,10 +148,8 @@
         </div>
     </section>
 
-    <!-- ==================== MAIN APP LAYOUT (Hidden until logged in) ==================== -->
     <div id="app-layout" class="hidden w-full min-h-screen flex-col md:flex-row pb-20 md:pb-0 relative z-10">
         
-        <!-- DESKTOP SIDEBAR -->
         <aside class="w-64 glass-morphic hidden md:flex flex-col justify-between p-6 border-r border-slate-800 shrink-0">
             <div>
                 <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-10">
@@ -191,7 +179,6 @@
             </div>
         </aside>
 
-        <!-- MOBILE TOP BAR -->
         <header class="md:hidden w-full glass-morphic px-5 py-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-900 shrink-0">
             <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
                 <i class="fa-solid fa-bolt text-cyan-400 mr-1"></i>EnglishPro
@@ -202,10 +189,8 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 p-4 md:p-8 relative max-w-md mx-auto w-full md:max-w-none overflow-y-auto">
             
-            <!-- TAB 1: DASHBOARD -->
             <section id="dashboard" class="tab-content block space-y-6">
                 <div class="bg-gradient-to-r from-purple-900/40 via-slate-900/80 to-cyan-900/40 p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
                     
@@ -275,7 +260,6 @@
                 </div>
             </section>
 
-            <!-- TAB: STATIC LEARNING CONTENT -->
             <section id="learning-section" class="tab-content hidden relative">
                 <div class="flex justify-between items-center mb-6">
                     <button onclick="closeLearning()" class="text-xs bg-slate-800 px-4 py-2.5 rounded-xl hover:bg-slate-700 transition flex items-center gap-1.5 shrink-0">
@@ -290,7 +274,6 @@
                 </div>
             </section>
 
-            <!-- TAB: LEADERBOARD -->
             <section id="leaderboard" class="tab-content hidden relative">
                 <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-trophy text-amber-400"></i> Top Learners</h2>
                 <div class="glass-morphic p-4 rounded-3xl border border-slate-800" id="lb-container">
@@ -298,7 +281,6 @@
                 </div>
             </section>
 
-            <!-- TAB 2: AI TUTOR -->
             <section id="ai-tutor" class="tab-content hidden flex flex-col h-[65vh] md:h-[78vh] relative">
                 <div class="flex justify-between items-center mb-3">
                     <div>
@@ -327,7 +309,6 @@
                 </div>
             </section>
 
-            <!-- TAB 3: GAMES ARCADE -->
             <section id="games" class="tab-content hidden relative">
                 <div id="games-menu">
                     <h2 class="text-2xl font-bold mb-4">Games Arcade 🕹️</h2>
@@ -367,7 +348,6 @@
                     </div>
                 </div>
 
-                <!-- Game Playing Arena -->
                 <div id="game-arena" class="hidden">
                     <div class="flex justify-between items-center mb-4">
                         <button onclick="quitGame()" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition"><i class="fa-solid fa-arrow-left"></i> Back</button>
@@ -405,7 +385,6 @@
             </section>
         </main>
 
-        <!-- MOBILE BOTTOM NAVIGATION -->
         <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-4 py-2.5 z-50 px-2 shrink-0">
             <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-dashboard">
                 <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[10px] font-medium">Home</span>
@@ -420,10 +399,7 @@
                 <i class="fa-solid fa-trophy text-lg"></i><span class="text-[10px] font-medium">Rank</span>
             </button>
         </nav>
-    </div> <!-- END MAIN APP LAYOUT -->
-
-    <!-- ==================== SYSTEM SCRIPT (Firebase, Auth, Leaderboard & Game Logic) ==================== -->
-    <script>
+    </div> <script>
         // --- 0. CUSTOM SPLASH SCREEN LOGIC ---
         function initApp() {
             setTimeout(() => {
@@ -611,35 +587,49 @@
         let cwCurrentLevel = 1, wsCurrentLevel = 1;
         let remainingHints = 3; 
 
-        // AdMob Logic using TEST IDs with delayed initialization for APK
+        // AdMob Logic using TEST IDs with delayed initialization and visual debugger
         async function initAdMob() {
-            if (!window.Capacitor || !Capacitor.Plugins.AdMob) {
-                console.log("AdMob only available in Native APK.");
-                return;
-            }
-            const { AdMob } = Capacitor.Plugins;
             try {
+                if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+                    console.log("Not native platform. Ads won't show in browser.");
+                    return;
+                }
+                
+                const AdMob = window.Capacitor?.Plugins?.AdMob;
+                if (!AdMob) {
+                    showToast("AdMob Plugin missing in build.", false);
+                    return;
+                }
+                
+                // Show initializing toast so user knows it's trying
+                showToast("Initializing Test Ads...", true);
+
                 await AdMob.initialize();
                 
-                // Add a small delay so Google Play Services can warm up in APK
                 setTimeout(async () => {
-                    await AdMob.showBanner({ 
-                        adId: 'ca-app-pub-3940256099942544/6300978111', // Test Banner ID
-                        adSize: 'BANNER', 
-                        position: 'BOTTOM_CENTER', 
-                        margin: 80, 
-                        isTesting: true 
-                    });
-                    
-                    await AdMob.prepareInterstitial({ 
-                        adId: 'ca-app-pub-3940256099942544/1033173712', // Test Interstitial ID
-                        isTesting: true 
-                    });
-                    
-                    await AdMob.prepareRewardVideoAd({ 
-                        adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded ID
-                        isTesting: true 
-                    });
+                    try {
+                        await AdMob.showBanner({ 
+                            adId: 'ca-app-pub-3940256099942544/6300978111', // Test Banner ID
+                            adSize: 'BANNER', 
+                            position: 'BOTTOM_CENTER', 
+                            margin: 80, 
+                            isTesting: true 
+                        });
+                        
+                        await AdMob.prepareInterstitial({ 
+                            adId: 'ca-app-pub-3940256099942544/1033173712', // Test Interstitial ID
+                            isTesting: true 
+                        });
+                        
+                        await AdMob.prepareRewardVideoAd({ 
+                            adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded ID
+                            isTesting: true 
+                        });
+                        
+                        showToast("Ads Loaded Successfully!", true);
+                    } catch(err) {
+                        showToast("Ad Load Error: " + JSON.stringify(err), false);
+                    }
                 }, 2000);
 
                 AdMob.addListener('onRewardedVideoAdReward', () => {
@@ -657,13 +647,13 @@
                     AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-3940256099942544/5224354917', isTesting: true });
                 });
             } catch (e) { 
-                console.error('AdMob Error:', e); 
+                showToast("Critical AdMob Error: " + e.message, false);
             }
         }
 
         async function triggerInterstitial() {
-            if (!window.Capacitor || !Capacitor.Plugins.AdMob) return;
-            const { AdMob } = Capacitor.Plugins;
+            const AdMob = window.Capacitor?.Plugins?.AdMob;
+            if (!AdMob) return;
             try {
                 await AdMob.showInterstitial();
                 await AdMob.prepareInterstitial({ adId: 'ca-app-pub-3940256099942544/1033173712', isTesting: true });
@@ -671,12 +661,16 @@
         }
 
         async function triggerRewarded() {
-            if (!window.Capacitor || !Capacitor.Plugins.AdMob) {
+            const AdMob = window.Capacitor?.Plugins?.AdMob;
+            if (!AdMob) {
                 showToast("Ads work in mobile app only!", false);
                 return;
             }
-            const { AdMob } = Capacitor.Plugins;
-            try { await AdMob.showRewardVideoAd(); } catch(e) { showToast("Ad loading, please try again.", false); }
+            try { 
+                await AdMob.showRewardVideoAd(); 
+            } catch(e) { 
+                showToast("Ad loading, please try again.", false); 
+            }
         }
 
         const wsColors = [
@@ -690,7 +684,7 @@
             toast.innerText = msg;
             toast.className = `fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
             toast.style.opacity = '1';
-            setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
         }
 
         function buyHint() {
@@ -1221,7 +1215,6 @@
             return grid;
         }
 
-        // --- FIXED GET CELL CENTER LOGIC FOR PERFECT ALIGNMENT ---
         function getCellFromCoords(x, y) {
             let el = document.elementFromPoint(x, y);
             if(el && el.closest('.ws-cell')) {
