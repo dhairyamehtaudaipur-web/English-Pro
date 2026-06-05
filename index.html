@@ -1869,6 +1869,1488 @@
             }
             renderArenaCard(); 
         }
+       <!-- ==================== SYSTEM SCRIPT (Firebase, Auth, Leaderboard & Game Logic) ==================== -->
+    
+    <!-- ES Module se AdMob Import karein -->
+    <script type="module">
+        import { AdMob } from 'https://esm.sh/@capacitor-community/admob@6.0.0';
+        window.AdMobPlugin = AdMob;
+    </script>
+
+    <script>
+        // --- 0. CUSTOM SPLASH SCREEN LOGIC ---
+        function initApp() {
+            setTimeout(() => {
+                const splash = document.getElementById('custom-splash');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.classList.add('hidden'), 500);
+                }
+            }, 2500);
+        }
+
+        // --- 1. FIREBASE SETUP & AUTH LOGIC ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAFr6ZULfTrqqn1lOBnk7woMhdwtdT9-cU",
+            authDomain: "english-pro-b6012.firebaseapp.com",
+            projectId: "english-pro-b6012",
+            storageBucket: "english-pro-b6012.firebasestorage.app",
+            messagingSenderId: "112294349250",
+            appId: "1:112294349250:web:f15f05e6317a1fdc1f2e5b",
+            measurementId: "G-2Q44ESEDSX"
+        };
+        // Check if firebase is initialized to avoid errors
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Listen for Auth State changes
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('flex');
+                
+                // Set User Name/Avatar
+                const displayName = user.displayName || user.email.split('@')[0];
+                document.getElementById('user-name-desk').innerText = displayName;
+                document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
+                
+                initAppSystem(); // Load game stats & Ads
+                renderLeaderboard(displayName); // Load Leaderboard
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('flex');
+            }
+        });
+
+        function switchAuthView(view) {
+            document.getElementById('form-login').classList.add('hidden');
+            document.getElementById('form-signup').classList.add('hidden');
+            document.getElementById('form-forgot').classList.add('hidden');
+            document.getElementById(`form-${view}`).classList.remove('hidden');
+        }
+
+        function toggleEye(inputId, iconElement) {
+            const input = document.getElementById(inputId);
+            if(input.type === 'password') {
+                input.type = 'text';
+                iconElement.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                iconElement.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function btnLoading(btnId, isLoading, text) {
+            const btn = document.getElementById(btnId);
+            if(isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="loader"></span>`;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<span>${text}</span>`;
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('log-email').value.trim();
+            const pwd = document.getElementById('log-pwd').value;
+            const remember = document.getElementById('log-remember').checked;
+
+            if(!email || !pwd) return showToast("Please fill all fields", false);
+            
+            btnLoading('btn-login', true, 'Login');
+            try {
+                const persistence = remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+                await auth.setPersistence(persistence);
+                await auth.signInWithEmailAndPassword(email, pwd);
+                showToast("Logged in successfully!", true);
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+            btnLoading('btn-login', false, 'Login');
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('sign-name').value.trim();
+            const email = document.getElementById('sign-email').value.trim();
+            const pwd = document.getElementById('sign-pwd').value;
+
+            if(!name || !email || !pwd) return showToast("Please fill all fields", false);
+            if(pwd.length < 6) return showToast("Password must be at least 6 characters", false);
+
+            btnLoading('btn-signup', true, 'Sign Up');
+            try {
+                const userCred = await auth.createUserWithEmailAndPassword(email, pwd);
+                await userCred.user.updateProfile({ displayName: name });
+                showToast("Account created successfully!", true);
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+            btnLoading('btn-signup', false, 'Sign Up');
+        }
+
+        async function handleForgot() {
+            const email = document.getElementById('for-email').value.trim();
+            if(!email) return showToast("Enter registered email", false);
+
+            btnLoading('btn-forgot', true, 'Send Reset Link');
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showToast("Password reset link sent to email", true);
+                switchAuthView('login');
+            } catch (error) {
+                showToast(error.message.split(': ')[1] || error.message, false);
+            }
+            btnLoading('btn-forgot', false, 'Send Reset Link');
+        }
+
+        async function handleGoogleLogin() {
+            showToast("Google Login disabled for Android APK stability. Please use Email Signup.", false);
+            switchAuthView('signup');
+        }
+
+        function handleLogout() {
+            auth.signOut().then(() => showToast("Logged out", true));
+        }
+
+        // --- 1.5 LIVE LEADERBOARD (FIRESTORE) ---
+        async function renderLeaderboard() {
+            let container = document.getElementById('lb-container');
+            container.innerHTML = '<p class="text-center text-slate-400 text-sm py-4"><span class="loader"></span> Loading Live Data...</p>';
+            
+            try {
+                const snapshot = await db.collection('users').orderBy('xp', 'desc').limit(15).get();
+                let html = '<div class="space-y-3">';
+                
+                if(snapshot.empty) {
+                    html += '<p class="text-center text-slate-400 text-xs">No active users yet. Play games to rank up!</p>';
+                } else {
+                    let rank = 1;
+                    snapshot.forEach(doc => {
+                        let u = doc.data();
+                        let isMe = auth.currentUser && doc.id === auth.currentUser.uid;
+                        
+                        let rankColors = "bg-slate-800 text-slate-400";
+                        if(rank === 1) rankColors = "bg-yellow-500/20 text-yellow-400 border border-yellow-500/50";
+                        if(rank === 2) rankColors = "bg-slate-300/20 text-slate-300 border border-slate-300/50";
+                        if(rank === 3) rankColors = "bg-amber-700/20 text-amber-500 border border-amber-700/50";
+
+                        let meStyle = isMe ? "border-cyan-500/50 bg-cyan-900/20" : "border-slate-800 bg-slate-900/50";
+                        
+                        html += `
+                        <div class="flex items-center justify-between p-3 rounded-xl border ${meStyle}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full ${rankColors} flex items-center justify-center font-bold text-sm shrink-0">
+                                    ${rank}
+                                </div>
+                                <div class="font-medium text-sm ${isMe ? 'text-cyan-400' : 'text-slate-200'} truncate max-w-[150px]">
+                                    ${u.name || 'Student'} ${isMe ? '(You)' : ''}
+                                </div>
+                            </div>
+                            <div class="text-xs font-bold text-slate-300 bg-slate-950 px-3 py-1.5 rounded-lg shrink-0">
+                                ${u.xp || 0} XP
+                            </div>
+                        </div>`;
+                        rank++;
+                    });
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Failed to load leaderboard. Set Firebase Rules.</p>';
+            }
+        }
+
+        // --- 2. MAIN APP & GAME LOGIC ---
+        let xpPoints = 0, userCoins = 0, streakDays = 0;
+        let cwCurrentLevel = 1, wsCurrentLevel = 1;
+        let remainingHints = 3; 
+
+        // UPDATED ADMOB LOGIC WITH ESM PLUGIN FIX
+        async function initAdMob() {
+            try {
+                if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+                    console.log("Not native platform. Ads won't show in browser.");
+                    return;
+                }
+                
+                // Wait for ES Module to load the Plugin
+                if (!window.AdMobPlugin) {
+                    setTimeout(initAdMob, 500); // Retry after 500ms
+                    return;
+                }
+                
+                // Show initializing toast so user knows it's trying
+                showToast("Initializing Ads...", true);
+
+                await window.AdMobPlugin.initialize();
+                
+                setTimeout(async () => {
+                    try {
+                        await window.AdMobPlugin.showBanner({ 
+                            adId: 'ca-app-pub-3940256099942544/6300978111', 
+                            adSize: 'BANNER', 
+                            position: 'BOTTOM_CENTER', 
+                            margin: 80, 
+                            isTesting: true 
+                        });
+                        
+                        await window.AdMobPlugin.prepareInterstitial({ 
+                            adId: 'ca-app-pub-3940256099942544/1033173712',
+                            isTesting: true 
+                        });
+                        
+                        await window.AdMobPlugin.prepareRewardVideoAd({ 
+                            adId: 'ca-app-pub-3940256099942544/5224354917',
+                            isTesting: true 
+                        });
+                        
+                        showToast("Ads Loaded Successfully!", true);
+                    } catch(err) {
+                        showToast("Ad Load Error: " + JSON.stringify(err), false);
+                    }
+                }, 2000);
+
+                window.AdMobPlugin.addListener('onRewardedVideoAdReward', () => {
+                    remainingHints++;
+                    localStorage.setItem('ep_global_hints', remainingHints);
+                    refreshDashboardUI();
+                    showToast("Free Hint Earned! (+1 💡)", true);
+                    
+                    if(!document.getElementById('game-arena').classList.contains('hidden')) {
+                        let hBtn = document.getElementById('hint-btn');
+                        hBtn.disabled = false;
+                        hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                        hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+                    }
+                    window.AdMobPlugin.prepareRewardVideoAd({ adId: 'ca-app-pub-3940256099942544/5224354917', isTesting: true });
+                });
+            } catch (e) { 
+                showToast("Critical AdMob Error: " + e.message, false);
+            }
+        }
+
+        async function triggerInterstitial() {
+            if (!window.AdMobPlugin) return;
+            try {
+                await window.AdMobPlugin.showInterstitial();
+                await window.AdMobPlugin.prepareInterstitial({ adId: 'ca-app-pub-3940256099942544/1033173712', isTesting: true });
+            } catch(e) {}
+        }
+
+        async function triggerRewarded() {
+            if (!window.AdMobPlugin) {
+                showToast("Ads work in mobile app only!", false);
+                return;
+            }
+            try { 
+                await window.AdMobPlugin.showRewardVideoAd(); 
+            } catch(e) { 
+                showToast("Ad loading, please try again.", false); 
+            }
+        }
+
+        const wsColors = [
+            { bg: 'rgba(236, 72, 153, 0.4)', border: '#ec4899' }, { bg: 'rgba(6, 182, 212, 0.4)', border: '#06b6d4' },  
+            { bg: 'rgba(168, 85, 247, 0.4)', border: '#a855f7' }, { bg: 'rgba(16, 185, 129, 0.4)', border: '#10b981' }, 
+            { bg: 'rgba(245, 158, 11, 0.4)', border: '#f59e0b' }, { bg: 'rgba(239, 68, 68, 0.4)', border: '#ef4444' }   
+        ];
+
+        function showToast(msg, isSuccess) {
+            let toast = document.getElementById('toast-msg');
+            toast.innerText = msg;
+            toast.className = `fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 ${isSuccess ? 'bg-emerald-500/90 border border-emerald-400 text-white' : 'bg-red-500/90 border border-red-400 text-white'}`;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+
+        function buyHint() {
+            const cost = 200;
+            if(userCoins >= cost) {
+                userCoins -= cost;
+                remainingHints++;
+                localStorage.setItem('ep_coins', userCoins);
+                localStorage.setItem('ep_global_hints', remainingHints);
+                refreshDashboardUI();
+                showToast(`Hint Purchased! (+1 💡)`, true);
+                
+                if(!document.getElementById('game-arena').classList.contains('hidden')) {
+                    let hBtn = document.getElementById('hint-btn');
+                    hBtn.disabled = false;
+                    hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                    hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+                }
+            } else {
+                showToast(`Not enough Coins! Loading Free Ad...`, false);
+                triggerRewarded();
+            }
+        }
+
+        function initAppSystem() {
+            xpPoints = parseInt(localStorage.getItem('ep_xp')) || 0;
+            userCoins = parseInt(localStorage.getItem('ep_coins')) || 0;
+            
+            let savedHints = localStorage.getItem('ep_global_hints');
+            if(savedHints !== null && !isNaN(savedHints)) { remainingHints = parseInt(savedHints); } 
+            else { remainingHints = 3; localStorage.setItem('ep_global_hints', 3); }
+
+            cwCurrentLevel = parseInt(localStorage.getItem('ep_cw_lvl')) || 1;
+            document.getElementById('cw-lvl-badge').innerText = cwCurrentLevel;
+            
+            if (!localStorage.getItem('ep_ws_save_fix_v5')) {
+                localStorage.setItem('ep_ws_save_fix_v5', '1');
+                localStorage.removeItem('ep_ws_data'); localStorage.removeItem('ep_ws_grid'); localStorage.removeItem('ep_ws_found');
+            }
+
+            wsCurrentLevel = parseInt(localStorage.getItem('ep_ws_lvl')) || 1;
+            document.getElementById('ws-lvl-badge').innerText = wsCurrentLevel;
+            
+            streakDays = parseInt(localStorage.getItem('ep_streak')) || 0;
+            let lastVisit = localStorage.getItem('ep_last_visit');
+            let today = new Date().toDateString();
+
+            if (lastVisit !== today) {
+                if(lastVisit) {
+                    let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                    if (lastVisit === yesterday.toDateString()) streakDays += 1; else streakDays = 1;
+                } else streakDays = 1;
+                localStorage.setItem('ep_last_visit', today);
+                localStorage.setItem('ep_streak', streakDays);
+            }
+            refreshDashboardUI();
+            initAdMob();
+        }
+
+        function refreshDashboardUI() {
+            if(document.getElementById('dash-xp')) document.getElementById('dash-xp').innerText = xpPoints;
+            if(document.getElementById('dash-coins')) document.getElementById('dash-coins').innerText = userCoins + " 🪙";
+            if(document.getElementById('dash-streak')) document.getElementById('dash-streak').innerText = streakDays + " 🔥";
+            if(document.getElementById('dash-hints')) document.getElementById('dash-hints').innerText = remainingHints + " 💡";
+            
+            localStorage.setItem('ep_xp', xpPoints);
+            localStorage.setItem('ep_coins', userCoins);
+            localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
+            localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
+
+            // Sync to Live Firestore
+            if(auth.currentUser) {
+                db.collection('users').doc(auth.currentUser.uid).set({
+                    name: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+                    xp: xpPoints
+                }, { merge: true }).catch(e => console.log("Cloud sync delayed"));
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn-desk').forEach(b => b.className = "nav-btn-desk w-full flex items-center p-3 rounded-xl text-slate-400 hover:text-white transition hover:bg-slate-800/50");
+            if(document.getElementById('desk-' + tabId)) document.getElementById('desk-' + tabId).className = "nav-btn-desk w-full flex items-center p-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/30 font-medium transition";
+
+            document.querySelectorAll('.nav-btn-mob').forEach(b => b.className = "nav-btn-mob flex flex-col items-center gap-1 text-slate-500");
+            if(document.getElementById('mob-' + tabId)) document.getElementById('mob-' + tabId).className = "nav-btn-mob flex flex-col items-center gap-1 text-cyan-400";
+
+            if (tabId === 'games') quitGame(); 
+            if (tabId === 'dashboard') {
+                document.getElementById('learning-section').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+            }
+            if (tabId === 'leaderboard') {
+                renderLeaderboard();
+            }
+            refreshDashboardUI();
+        }
+
+        const learningData = {
+            'gender': {
+                title: 'Gender (Masculine & Feminine)',
+                desc: 'Intermediate and Advanced Gender pairs:',
+                table: [['Masculine (Male)', 'Feminine (Female)'], ['Stallion (Horse)', 'Mare'], ['Gander (Goose)', 'Goose'], ['Duke', 'Duchess'], ['Wizard', 'Witch'], ['Emperor', 'Empress'], ['Monk', 'Nun'], ['Drake (Duck)', 'Duck'], ['Fox', 'Vixen'], ['Ram (Sheep)', 'Ewe'], ['Rooster', 'Hen'], ['Nephew', 'Niece'], ['Hero', 'Heroine'], ['Host', 'Hostess'], ['Bachelor', 'Spinster']]
+            },
+            'plural': {
+                title: 'Advanced Singular & Plural',
+                desc: 'Learn irregular and tricky plural nouns:',
+                table: [['Singular (One)', 'Plural (Many)'], ['Syllabus', 'Syllabi'], ['Cactus', 'Cacti'], ['Criterion', 'Criteria'], ['Datum', 'Data'], ['Analysis', 'Analyses'], ['Oasis', 'Oases'], ['Fungus', 'Fungi'], ['Nucleus', 'Nuclei'], ['Phenomenon', 'Phenomena'], ['Index', 'Indices'], ['Thief', 'Thieves'], ['Goose', 'Geese'], ['Person', 'People'], ['Crisis', 'Crises']]
+            },
+            'collective': {
+                title: 'Unique Collective Nouns',
+                desc: 'Advanced group words for animals and things:',
+                table: [['Group Description', 'Collective Noun Phrase'], ['A group of crows', 'A Murder of crows'], ['A group of owls', 'A Parliament of owls'], ['A group of geese', 'A Gaggle of geese'], ['A group of tigers', 'An Ambush of tigers'], ['A group of bears', 'A Sleuth of bears'], ['A group of hippos', 'A Bloat of hippos'], ['A group of cheetahs', 'A Coalition of cheetahs'], ['A group of parrots', 'A Pandemonium of parrots'], ['A group of jellyfish', 'A Smack of jellyfish'], ['A group of rhinos', 'A Crash of rhinos'], ['A group of frogs', 'An Army of frogs'], ['A group of wolves', 'A Pack of wolves']]
+            }
+        };
+
+        function showLearning(topic) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById('learning-section').classList.remove('hidden');
+            const data = learningData[topic];
+            document.getElementById('learn-title').innerText = data.title;
+            document.getElementById('learn-desc').innerText = data.desc;
+            let html = '<div class="grid grid-cols-2 gap-0 border border-slate-700 rounded-xl overflow-hidden mt-4 text-[11px] md:text-sm text-left">';
+            data.table.forEach((row, idx) => {
+                let bgClass = idx === 0 ? 'bg-indigo-600/40 font-bold text-cyan-300' : 'bg-slate-800/50 border-t border-slate-700 text-slate-200';
+                html += `<div class="p-3 ${bgClass} border-r border-slate-700">${row[0]}</div>`;
+                html += `<div class="p-3 ${bgClass}">${row[1]}</div>`;
+            });
+            html += '</div>';
+            document.getElementById('learn-content').innerHTML = html;
+        }
+
+        function closeLearning() { switchTab('dashboard'); }
+
+        const aiKnowledge = {
+            "noun": "<strong>Noun:</strong> A noun is a word that represents a person, place, thing, or idea.<br><br><strong>Types of Nouns:</strong><br>1. <u>Proper Noun:</u> A specific name for a particular person, place, or thing (e.g., London, John). Always capitalized.<br>2. <u>Common Noun:</u> A general name for a person, place, or thing in a class or group (e.g., boy, city).<br>3. <u>Collective Noun:</u> A word that refers to a group or collection of people or things (e.g., team, army, flock).<br>4. <u>Abstract Noun:</u> A noun denoting an idea, quality, or state rather than a concrete object (e.g., truth, danger, happiness).<br>5. <u>Material Noun:</u> Refers to a material or substance from which things are made (e.g., gold, iron, cotton).",
+            "pronoun": "<strong>Pronoun:</strong> A pronoun is a word that takes the place of a noun in a sentence to avoid repetition.<br><br><strong>Types of Pronouns:</strong><br>1. <u>Personal Pronouns:</u> Represent specific people or things (I, you, he, she, it, we, they).<br>2. <u>Reflexive Pronouns:</u> Used when the subject and object are the same (myself, himself).<br>3. <u>Demonstrative Pronouns:</u> Point to specific objects (this, that, these, those).<br>4. <u>Relative Pronouns:</u> Connect a clause or phrase to a noun or pronoun (who, whom, which, that).<br>5. <u>Interrogative Pronouns:</u> Used to ask questions (who, what, which).",
+            "verb": "<strong>Verb:</strong> A verb is a word used to describe an action, state, or occurrence.<br><br><strong>Types of Verbs:</strong><br>1. <u>Action Verbs:</u> Express physical or mental actions (run, think, jump).<br>2. <u>Helping (Auxiliary) Verbs:</u> Used with a main verb to help express the main verb's tense, mood, or voice (is, am, are, have, has).<br>3. <u>Modal Verbs:</u> Express necessity or possibility (must, shall, will, should, would, can, could, may, might).<br>4. <u>Transitive Verbs:</u> Require a direct object to complete their meaning (She <em>read</em> the book).<br>5. <u>Intransitive Verbs:</u> Do not require a direct object (He <em>slept</em>).",
+            "adjective": "<strong>Adjective:</strong> An adjective is a word that modifies, describes, or limits a noun or pronoun.<br><br><strong>Types of Adjectives:</strong><br>1. <u>Descriptive Adjectives:</u> Describe qualities (a <em>brave</em> person, a <em>beautiful</em> flower).<br>2. <u>Quantitative Adjectives:</u> Indicate the amount or quantity (<em>some</em> water, <em>much</em> time).<br>3. <u>Demonstrative Adjectives:</u> Point out specific nouns (<em>this</em> pen, <em>that</em> tree).<br>4. <u>Possessive Adjectives:</u> Show ownership (<em>my</em> car, <em>his</em> book).",
+            "adverb": "<strong>Adverb:</strong> An adverb is a word that modifies a verb, an adjective, or another adverb, expressing manner, place, time, or degree.<br><br><strong>Types of Adverbs:</strong><br>1. <u>Adverbs of Time:</u> Answer 'when' (yesterday, tomorrow, now).<br>2. <u>Adverbs of Place:</u> Answer 'where' (here, there, everywhere).<br>3. <u>Adverbs of Manner:</u> Answer 'how' (slowly, quickly, bravely).<br>4. <u>Adverbs of Degree:</u> Answer 'how much' (very, almost, entirely).",
+            "preposition": "<strong>Preposition:</strong> A preposition is a word placed before a noun or pronoun to form a phrase modifying another word in the sentence, typically indicating direction, time, place, location, or spatial relationships.<br><br><strong>Types of Prepositions:</strong><br>1. <u>Time:</u> in, on, at (e.g., at 5 PM).<br>2. <u>Place/Direction:</u> to, towards, into, over, under.",
+            "conjunction": "<strong>Conjunction:</strong> A conjunction is a word used to connect clauses, sentences, phrases, or words together.<br><br><strong>Types of Conjunctions:</strong><br>1. <u>Coordinating Conjunctions:</u> Connect items of equal grammatical rank (for, and, nor, but, or, yet, so - FANBOYS).<br>2. <u>Subordinating Conjunctions:</u> Connect a dependent clause to an independent clause (because, although, if, since).",
+            "interjection": "<strong>Interjection:</strong> An interjection is a word or expression that occurs as an utterance on its own and expresses a spontaneous feeling or reaction.<br><br><strong>Examples:</strong> Wow!, Alas!, Ouch!, Hurray!",
+            "tense": "<strong>Tense:</strong> Tense is a grammatical category that indicates the time of a state or action. <br><br>There are three primary tenses in English: <strong>Present, Past, and Future</strong>. Each of these is subdivided into four aspects:<br>1. Simple (Indefinite)<br>2. Continuous (Progressive)<br>3. Perfect<br>4. Perfect Continuous.",
+            "simple present": "<strong>Simple Present Tense:</strong> Used to describe habits, unchanging situations, general truths, and fixed arrangements.<br><br><em>Rule:</em> Subject + V1 (s/es) + Object.<br><em>Example:</em> He plays cricket every evening.",
+            "present continuous": "<strong>Present Continuous Tense:</strong> Used to describe an action that is happening right now, at the exact moment of speech.<br><br><em>Rule:</em> Subject + is/am/are + V1+ing + Object.<br><em>Example:</em> She is reading a book.",
+            "present perfect": "<strong>Present Perfect Tense:</strong> Used to express an action that happened at an unspecified time before now, or an action that began in the past and continues to the present.<br><br><em>Rule:</em> Subject + has/have + V3 (Past Participle) + Object.<br><em>Example:</em> They have finished their homework.",
+            "present perfect continuous": "<strong>Present Perfect Continuous Tense:</strong> Shows that something started in the past and is continuing at the present time.<br><br><em>Rule:</em> Subject + has/have + been + V1+ing + since/for + Time.<br><em>Example:</em> I have been waiting for two hours.",
+            "simple past": "<strong>Simple Past Tense:</strong> Used to talk about a completed action in a time before now.<br><br><em>Rule:</em> Subject + V2 (Past form) + Object.<br><em>Example:</em> We visited Paris last year.",
+            "past continuous": "<strong>Past Continuous Tense:</strong> Describes actions or events in a time before now, which began in the past and were still going on when another event occurred.<br><br><em>Rule:</em> Subject + was/were + V1+ing + Object.<br><em>Example:</em> I was watching TV when she called.",
+            "past perfect": "<strong>Past Perfect Tense:</strong> Used to make it clear that one event happened before another in the past.<br><br><em>Rule:</em> Subject + had + V3 (Past Participle) + Object.<br><em>Example:</em> The train had left before we reached the station.",
+            "past perfect continuous": "<strong>Past Perfect Continuous Tense:</strong> Shows that an ongoing action in the past has ended.<br><br><em>Rule:</em> Subject + had + been + V1+ing + since/for.<br><em>Example:</em> He had been working there for five years before he resigned.",
+            "simple future": "<strong>Simple Future Tense:</strong> Refers to a time later than now, and expresses facts or certainty.<br><br><em>Rule:</em> Subject + will/shall + V1 + Object.<br><em>Example:</em> I will send you the report tomorrow.",
+            "future continuous": "<strong>Future Continuous Tense:</strong> Describes an unfinished action that will be in progress at a time later than now.<br><br><em>Rule:</em> Subject + will/shall + be + V1+ing + Object.<br><em>Example:</em> I will be attending the conference next week.",
+            "future perfect": "<strong>Future Perfect Tense:</strong> Used to describe an event that is expected or planned to happen before a time of reference in the future.<br><br><em>Rule:</em> Subject + will/shall + have + V3 + Object.<br><em>Example:</em> She will have graduated by next summer.",
+            "future perfect continuous": "<strong>Future Perfect Continuous Tense:</strong> Used to project ourselves forward in time and look back. It refers to events or actions that are currently unfinished but will be finished at some future time.<br><br><em>Rule:</em> Subject + will/shall + have + been + V1+ing + since/for.<br><em>Example:</em> By next month, I will have been living here for ten years.",
+            "active passive": "<strong>Voice (Active and Passive):</strong><br><br>1. <u>Active Voice:</u> The subject performs the action stated by the verb. <br><em>Example:</em> Shakespeare wrote the play.<br>2. <u>Passive Voice:</u> The subject is acted upon by the verb.<br><em>Example:</em> The play was written by Shakespeare.<br><em>General Rule for Conversion:</em> Object + Auxiliary Verb + V3 (Past Participle) + by + Subject.",
+            "direct indirect": "<strong>Speech (Direct and Indirect):</strong><br><br>1. <u>Direct Speech:</u> Quoting the exact words spoken by a person, enclosed in quotation marks. <br><em>Example:</em> He said, \"I am reading a book.\"<br>2. <u>Indirect (Reported) Speech:</u> Expressing the content of statements without quoting them explicitly. Changes in tense and pronouns usually occur.<br><em>Example:</em> He said that he was reading a book.",
+            "hello": "Hello! How may I assist you with your English Grammar studies today? You can inquire about any specific topic such as Nouns, Verbs, or Tenses."
+        };
+
+        function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
+        function triggerChatAction() {
+            const chatBox = document.getElementById('chat-input');
+            let msg = chatBox.value.trim().toLowerCase();
+            if(!msg) return;
+            const stream = document.getElementById('chat-stream');
+            stream.innerHTML += `<div class="flex gap-2.5 flex-row-reverse items-start"><div class="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center font-bold text-black flex-shrink-0">S</div><div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-slate-100 shadow-md">${chatBox.value}</div></div>`;
+            chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
+
+            setTimeout(() => {
+                let answer = "I apologize, but my knowledge is currently restricted to English Grammar. Please inquire about topics such as: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', or 'Active Passive'.";
+                let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
+                for(let key of keys) { 
+                    if(msg.includes(key)) { 
+                        answer = aiKnowledge[key]; 
+                        break; 
+                    } 
+                }
+                stream.innerHTML += `<div class="flex gap-2.5 items-start"><div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div><div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 text-xs">${answer}</div></div>`;
+                stream.scrollTop = stream.scrollHeight;
+            }, 600);
+        }
+        function clearChat() { document.getElementById('chat-stream').innerHTML = ''; }
+
+
+        const fullMCQData = [
+            {q: "Neither Rahul nor his friends ____ present.", o: ["is", "are", "has", "have been"], c: 1},
+            {q: "If I ____ a billionaire, I would travel the world.", o: ["am", "was", "were", "had been"], c: 2},
+            {q: "She has been studying ____ morning.", o: ["for", "since", "from", "in"], c: 1},
+            {q: "Hardly had I reached the station ____ the train left.", o: ["then", "when", "than", "after"], c: 1},
+            {q: "By next year, she ____ graduated.", o: ["will be", "would have", "will have", "has"], c: 2},
+            {q: "He ___ a car.", o: ["has", "have", "is", "are"], c: 0},
+            {q: "They ___ playing football.", o: ["is", "am", "are", "was"], c: 2},
+            {q: "I ___ completed my work.", o: ["has", "have", "is", "are"], c: 1},
+            {q: "She ___ to the market yesterday.", o: ["go", "goes", "went", "gone"], c: 2},
+            {q: "The sun ___ in the east.", o: ["rise", "rises", "rose", "rising"], c: 1},
+            {q: "I have been living here ___ 2010.", o: ["for", "since", "from", "in"], c: 1},
+            {q: "He has been working ___ two hours.", o: ["since", "for", "from", "in"], c: 1},
+            {q: "Either you or I ___ wrong.", o: ["are", "is", "am", "were"], c: 2},
+            {q: "Bread and butter ___ my favorite breakfast.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Slow and steady ___ the race.", o: ["win", "wins", "won", "winning"], c: 1},
+            {q: "A pair of shoes ___ missing.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "The police ___ caught the thief.", o: ["has", "have", "is", "are"], c: 1},
+            {q: "The news ___ true.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Physics ___ a difficult subject.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "One of my friends ___ going to America.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Each of the boys ___ given a prize.", o: ["was", "were", "has", "have"], c: 0},
+            {q: "The quality of the apples ___ not good.", o: ["was", "were", "has", "have"], c: 0},
+            {q: "A lot of money ___ wasted.", o: ["was", "were", "has", "have"], c: 0},
+            {q: "My spectacles ___ missing.", o: ["is", "are", "has", "have"], c: 1},
+            {q: "He as well as his friends ___ innocent.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "Not only he but also his brothers ___ guilty.", o: ["is", "are", "was", "has"], c: 1},
+            {q: "He ordered ___ cup of coffee.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "She is ___ European.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "He is ___ honest man.", o: ["a", "an", "the", "no article"], c: 1},
+            {q: "He gave me ___ piece of advice.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "I read ___ book yesterday.", o: ["a", "an", "the", "no article"], c: 0},
+            {q: "He is looking ___ a job.", o: ["at", "for", "to", "after"], c: 1},
+            {q: "She takes ___ her mother.", o: ["after", "for", "to", "with"], c: 0},
+            {q: "The meeting was put ___.", o: ["on", "off", "out", "away"], c: 1},
+            {q: "Please turn ___ the light.", o: ["on", "in", "at", "over"], c: 0},
+            {q: "He gave ___ smoking.", o: ["away", "in", "up", "out"], c: 2},
+            {q: "She deals ___ garments.", o: ["in", "with", "at", "on"], c: 0},
+            {q: "I agree ___ you.", o: ["to", "with", "at", "on"], c: 1},
+            {q: "I agree ___ your proposal.", o: ["to", "with", "at", "on"], c: 0},
+            {q: "He died ___ cholera.", o: ["of", "from", "with", "by"], c: 0},
+            {q: "She died ___ overwork.", o: ["of", "from", "with", "by"], c: 1},
+            {q: "He is angry ___ me.", o: ["at", "with", "to", "on"], c: 1},
+            {q: "I am angry ___ his behavior.", o: ["at", "with", "to", "on"], c: 0},
+            {q: "He arrived ___ the station.", o: ["in", "at", "on", "to"], c: 1},
+            {q: "They arrived ___ London.", o: ["in", "at", "on", "to"], c: 0},
+            {q: "I congratulate you ___ your success.", o: ["for", "on", "at", "to"], c: 1},
+            {q: "He is suffering ___ fever.", o: ["of", "from", "with", "by"], c: 1},
+            {q: "She is afraid ___ dogs.", o: ["from", "of", "with", "by"], c: 1},
+            {q: "He is good ___ English.", o: ["in", "at", "with", "for"], c: 1},
+            {q: "Listen ___ me.", o: ["at", "to", "with", "for"], c: 1},
+            {q: "Beware ___ dogs.", o: ["from", "of", "with", "by"], c: 1},
+            {q: "I am fond ___ music.", o: ["of", "from", "with", "by"], c: 0},
+            {q: "He is interested ___ politics.", o: ["in", "on", "at", "with"], c: 0},
+            {q: "She is proud ___ her beauty.", o: ["of", "for", "with", "by"], c: 0},
+            {q: "I belong ___ a middle-class family.", o: ["from", "to", "with", "in"], c: 1},
+            {q: "He believes ___ God.", o: ["on", "in", "at", "to"], c: 1},
+            {q: "She complained ___ the principal.", o: ["to", "against", "with", "on"], c: 0},
+            {q: "He depends ___ his parents.", o: ["in", "on", "at", "with"], c: 1},
+            {q: "I prefer tea ___ coffee.", o: ["than", "to", "over", "from"], c: 1},
+            {q: "He is senior ___ me.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "She is junior ___ him.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "He is superior ___ all.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "She is inferior ___ none.", o: ["than", "to", "from", "by"], c: 1},
+            {q: "I parted ___ my friends.", o: ["from", "with", "by", "to"], c: 0},
+            {q: "He parted ___ his money.", o: ["from", "with", "by", "to"], c: 1},
+            {q: "I am obliged ___ you.", o: ["for", "to", "with", "by"], c: 1},
+            {q: "He is known ___ me.", o: ["by", "to", "for", "with"], c: 1},
+            {q: "The book is written ___ him.", o: ["by", "with", "to", "from"], c: 0},
+            {q: "He killed the snake ___ a stick.", o: ["by", "with", "from", "in"], c: 1},
+            {q: "She cut the apple ___ a knife.", o: ["by", "with", "from", "in"], c: 1},
+            {q: "I go to school ___ foot.", o: ["by", "on", "with", "in"], c: 1},
+            {q: "He travels ___ train.", o: ["by", "on", "with", "in"], c: 0},
+            {q: "She sat ___ the shade of a tree.", o: ["under", "in", "below", "beneath"], c: 1},
+            {q: "The cat is hiding ___ the table.", o: ["under", "in", "below", "beneath"], c: 0},
+            {q: "He jumped ___ the river.", o: ["in", "into", "on", "onto"], c: 1},
+            {q: "The frog fell ___ the well.", o: ["in", "into", "on", "onto"], c: 1},
+            {q: "He poured the water ___ the jug.", o: ["in", "into", "on", "onto"], c: 1},
+            {q: "The book is ___ the table.", o: ["in", "into", "on", "onto"], c: 2}
+        ];
+
+        const fullJumbleData = [
+            "He is a good boy", "She writes a letter", "They are playing football", "I will go to the market", 
+            "We have won the match", "The sun rises in the east", "Dogs bark at night", "My mother cooks delicious food", 
+            "He was reading a book", "I have been waiting here", "She will be singing a song", "They had gone to school", 
+            "You should respect your elders", "I am looking forward to it", "The train left the station", "We are learning English grammar", 
+            "He is the best student", "She bought a new dress", "They will arrive tomorrow", "I cannot solve this problem", 
+            "He has finished his work", "The cat is sleeping on the bed", "Birds are flying in the sky", "We must protect our environment", 
+            "Water boils at hundred degrees", "He is working very hard", "She paints beautiful pictures", "They are building a house", 
+            "I saw a shooting star", "He speaks English fluently", "She has a cute little puppy", "We enjoyed the movie yesterday", 
+            "The baby is crying loudly", "He drives his car carefully", "They have bought a new car", "I will help you tomorrow", 
+            "She is watering the plants", "He broke the glass window", "The teacher is explaining the lesson", "We are going on a trip", 
+            "She makes very good coffee", "They were watching television", "I have completed my assignment", "He is listening to music", 
+            "She wrote a long story", "They are playing in the garden", "I will call you later", "He found his lost keys", 
+            "She is feeding the street dogs", "They are planting trees", "I like to read historical books", "He is wearing a blue shirt", 
+            "She has beautifully decorated the room", "They are laughing at the joke", "I will never forget this day", "He is repairing his old bicycle", 
+            "She is practicing the piano", "They are cleaning the classroom", "I have polished my shoes", "He is writing an important email", 
+            "She received a beautiful gift", "They are dancing on the stage", "I am baking a chocolate cake", "He is swimming in the pool", 
+            "She has baked some cookies", "They are painting the fence", "I will clean the house", "He is washing his clothes", 
+            "She is cooking dinner now", "They are fighting for their rights", "I have bought some fresh fruits", "He is running very fast", 
+            "She is talking to her friend", "They are waiting for the bus", "I will attend the meeting", "He is climbing the tall tree", 
+            "She is watching a horror movie", "They are studying for exams", "I have locked the front door", "He is packing his bags", 
+            "She is searching for her ring", "They are organizing a party", "I will bring the snacks", "He is eating a juicy apple", 
+            "She is wearing beautiful jewelry", "They are throwing the ball", "I have fixed the broken chair", "He is playing the guitar", 
+            "She is looking at the mirror", "They are running in the race", "I will read this novel", "He is drawing a landscape"
+        ];
+
+        const fullTypeData = [
+            {q: "He has given ___ (preposition) smoking.", a: "up"}, {q: "I prefer coffee ___ (preposition) tea.", a: "to"},
+            {q: "One of the boys ___ (is/are) missing.", a: "is"}, {q: "He talks as if he ___ (was/were) the boss.", a: "were"},
+            {q: "I am looking forward to ___ (meet) you.", a: "meeting"}, {q: "She is good ___ (at/in) mathematics.", a: "at"},
+            {q: "He is afraid ___ (of/from) dogs.", a: "of"}, {q: "I have been here ___ (since/for) morning.", a: "since"},
+            {q: "We have lived here ___ (for/since) ten years.", a: "for"}, {q: "He is senior ___ (to/than) me.", a: "to"},
+            {q: "She died ___ (of/from) cholera.", a: "of"}, {q: "He is blind ___ (in/of) one eye.", a: "in"},
+            {q: "I agree ___ (with/to) your proposal.", a: "to"}, {q: "He deals ___ (in/with) garments.", a: "in"},
+            {q: "She is fond ___ (of/about) music.", a: "of"}, {q: "The book is ___ (on/in) the table.", a: "on"},
+            {q: "He jumped ___ (in/into) the river.", a: "into"}, {q: "Listen ___ (to/at) your teacher.", a: "to"},
+            {q: "He was born ___ (in/on) 1990.", a: "in"}, {q: "She went ___ (to/in) the market.", a: "to"},
+            {q: "I am proud ___ (of/about) you.", a: "of"}, {q: "He is married ___ (to/with) my sister.", a: "to"},
+            {q: "Do not laugh ___ (at/on) the poor.", a: "at"}, {q: "Beware ___ (of/from) pickpockets.", a: "of"},
+            {q: "He is capable ___ (of/in) doing this.", a: "of"}, {q: "I congratulate you ___ (on/for) your success.", a: "on"},
+            {q: "He was absent ___ (from/for) the class.", a: "from"}, {q: "The train arrives ___ (at/in) 6 PM.", a: "at"},
+            {q: "She is famous ___ (for/of) her beauty.", a: "for"}, {q: "He is guilty ___ (of/for) theft.", a: "of"},
+            {q: "They arrived ___ (at/in) London.", a: "in"}, {q: "I am tired ___ (of/from) walking.", a: "of"},
+            {q: "He is addicted ___ (to/with) gambling.", a: "to"}, {q: "She was dressed ___ (in/with) red.", a: "in"},
+            {q: "He is popular ___ (with/among) the students.", a: "with"}, {q: "I rely ___ (on/in) you.", a: "on"},
+            {q: "She takes pride ___ (in/on) her wealth.", a: "in"}, {q: "He is faithful ___ (to/with) his master.", a: "to"},
+            {q: "I am obliged ___ (to/for) you.", a: "to"}, {q: "He succeeded ___ (in/at) the exam.", a: "in"},
+            {q: "She smiled ___ (at/on) him.", a: "at"}, {q: "I warn you ___ (against/about) him.", a: "against"},
+            {q: "He was accused ___ (of/for) murder.", a: "of"}, {q: "She is eligible ___ (for/to) the post.", a: "for"},
+            {q: "I object ___ (to/against) your remark.", a: "to"}, {q: "He was absorbed ___ (in/with) his studies.", a: "in"},
+            {q: "She is familiar ___ (with/to) this place.", a: "with"}, {q: "I was amazed ___ (at/by) his courage.", a: "at"},
+            {q: "He is notorious ___ (for/of) his temper.", a: "for"}, {q: "She has a passion ___ (for/of) reading.", a: "for"},
+            {q: "He is eligible ___ (for/to) promotion.", a: "for"}, {q: "She is ignorant ___ (of/about) the facts.", a: "of"},
+            {q: "I am acquainted ___ (with/to) him.", a: "with"}, {q: "He is deprived ___ (of/from) his rights.", a: "of"},
+            {q: "She is devoid ___ (of/from) common sense.", a: "of"}, {q: "I am convinced ___ (of/about) his honesty.", a: "of"},
+            {q: "He is endowed ___ (with/by) talents.", a: "with"}, {q: "She is infected ___ (with/by) a virus.", a: "with"},
+            {q: "I am involved ___ (in/with) a project.", a: "in"}, {q: "He is overwhelmed ___ (with/by) grief.", a: "with"},
+            {q: "She is satisfied ___ (with/by) her results.", a: "with"}, {q: "I am sympathetic ___ (to/with) her.", a: "to"},
+            {q: "He is tolerant ___ (of/towards) others.", a: "of"}, {q: "She is worthy ___ (of/for) praise.", a: "of"},
+            {q: "I am annoyed ___ (at/with) his behavior.", a: "at"}, {q: "He is astonished ___ (at/by) the news.", a: "at"},
+            {q: "She is delighted ___ (at/with) the gift.", a: "with"}, {q: "I am disappointed ___ (in/with) him.", a: "in"},
+            {q: "He is disgusted ___ (with/at) her attitude.", a: "with"}, {q: "She is shocked ___ (at/by) his death.", a: "at"},
+            {q: "I am surprised ___ (at/by) his success.", a: "at"}, {q: "He is vexed ___ (at/with) his brother.", a: "with"},
+            {q: "She is alarmed ___ (at/by) the noise.", a: "at"}, {q: "I am amused ___ (at/by) his jokes.", a: "at"},
+            {q: "He is frightened ___ (of/from) the dark.", a: "of"}, {q: "She is terrified ___ (of/from) snakes.", a: "of"},
+            {q: "I am scared ___ (of/from) ghosts.", a: "of"}
+        ];
+
+        const fullMatchData = [
+            {q: "She teaches English.", a: "Simple Present"}, {q: "Birds fly in the sky.", a: "Simple Present"},
+            {q: "I am writing an email.", a: "Present Continuous"}, {q: "It is raining now.", a: "Present Continuous"},
+            {q: "We have won the match.", a: "Present Perfect"}, {q: "She has finished work.", a: "Present Perfect"},
+            {q: "I have been reading.", a: "Present Perfect Continuous"}, {q: "It has been raining.", a: "Present Perfect Continuous"},
+            {q: "He bought a car.", a: "Simple Past"}, {q: "They went to school.", a: "Simple Past"},
+            {q: "She was singing.", a: "Past Continuous"}, {q: "We were playing.", a: "Past Continuous"},
+            {q: "The train had left.", a: "Past Perfect"}, {q: "I had seen him.", a: "Past Perfect"},
+            {q: "I had been working.", a: "Past Perfect Continuous"}, {q: "They had been sleeping.", a: "Past Perfect Continuous"},
+            {q: "I will go tomorrow.", a: "Simple Future"}, {q: "She will sing.", a: "Simple Future"},
+            {q: "I will be sleeping.", a: "Future Continuous"}, {q: "They will be running.", a: "Future Continuous"},
+            {q: "I will have finished.", a: "Future Perfect"}, {q: "She will have cooked.", a: "Future Perfect"},
+            {q: "I will have been playing.", a: "Future Perfect Continuous"}, {q: "They will have been studying.", a: "Future Perfect Continuous"},
+            {q: "He reads a book daily.", a: "Simple Present"}, {q: "They play cricket every Sunday.", a: "Simple Present"},
+            {q: "She is dancing gracefully.", a: "Present Continuous"}, {q: "The boys are running fast.", a: "Present Continuous"},
+            {q: "I have eaten my breakfast.", a: "Present Perfect"}, {q: "They have painted the wall.", a: "Present Perfect"},
+            {q: "He has been studying since 8 AM.", a: "Present Perfect Continuous"}, {q: "We have been waiting for two hours.", a: "Present Perfect Continuous"},
+            {q: "I saw him yesterday.", a: "Simple Past"}, {q: "She wrote a beautiful poem.", a: "Simple Past"},
+            {q: "They were laughing loudly.", a: "Past Continuous"}, {q: "He was driving carefully.", a: "Past Continuous"},
+            {q: "I had completed the task before he came.", a: "Past Perfect"}, {q: "She had left when I arrived.", a: "Past Perfect"},
+            {q: "He had been living there for five years.", a: "Past Perfect Continuous"}, {q: "They had been playing since morning.", a: "Past Perfect Continuous"},
+            {q: "I shall help you.", a: "Simple Future"}, {q: "He will buy a new house.", a: "Simple Future"},
+            {q: "She will be waiting for me.", a: "Future Continuous"}, {q: "They will be watching TV.", a: "Future Continuous"},
+            {q: "I shall have reached home by then.", a: "Future Perfect"}, {q: "He will have finished the job.", a: "Future Perfect"},
+            {q: "She will have been teaching for ten years.", a: "Future Perfect Continuous"}, {q: "They will have been traveling for two days.", a: "Future Perfect Continuous"},
+            {q: "The sun sets in the west.", a: "Simple Present"}, {q: "Water boils at 100 degrees.", a: "Simple Present"},
+            {q: "I am listening to music.", a: "Present Continuous"}, {q: "She is baking a cake.", a: "Present Continuous"},
+            {q: "He has just arrived.", a: "Present Perfect"}, {q: "I have known him for years.", a: "Present Perfect"},
+            {q: "She has been sleeping since noon.", a: "Present Perfect Continuous"}, {q: "It has been snowing all day.", a: "Present Perfect Continuous"},
+            {q: "We met him last week.", a: "Simple Past"}, {q: "He died in 1990.", a: "Simple Past"},
+            {q: "I was reading a novel.", a: "Past Continuous"}, {q: "She was washing clothes.", a: "Past Continuous"},
+            {q: "The patient had died before the doctor came.", a: "Past Perfect"}, {q: "I had already eaten.", a: "Past Perfect"},
+            {q: "She had been crying for an hour.", a: "Past Perfect Continuous"}, {q: "He had been walking all day.", a: "Past Perfect Continuous"},
+            {q: "I will call you tonight.", a: "Simple Future"}, {q: "It will rain tomorrow.", a: "Simple Future"},
+            {q: "I will be studying at that time.", a: "Future Continuous"}, {q: "He will be flying to London.", a: "Future Continuous"},
+            {q: "I will have completed this by Monday.", a: "Future Perfect"}, {q: "She will have graduated next year.", a: "Future Perfect"},
+            {q: "I will have been working here for 5 years.", a: "Future Perfect Continuous"}
+        ];
+
+        const allTenseNames = [
+            "Simple Present", "Present Continuous", "Present Perfect", "Present Perfect Continuous", 
+            "Simple Past", "Past Continuous", "Past Perfect", "Past Perfect Continuous", 
+            "Simple Future", "Future Continuous", "Future Perfect", "Future Perfect Continuous"
+        ];
+
+        function getFreshQuestions(gameKey, fullArray, count) {
+            let pool = JSON.parse(localStorage.getItem(gameKey));
+            if (!pool || pool.length < count) {
+                pool = [...fullArray].sort(() => 0.5 - Math.random());
+            }
+            let selected = pool.splice(0, count);
+            localStorage.setItem(gameKey, JSON.stringify(pool));
+            return selected;
+        }
+
+        const cwMasterDB = [
+            {l:"HEART", w:["HEART","EARTH","HEAR","TEAR","RATE"], a:["ART","EAR","EAT","ATE","TEA","HAT","RAT","TAR","HARE","ARE","ERA"]}, 
+            {l:"WATER", w:["WATER","WEAR","TEAR","RATE"], a:["WAR","RAW","ART","RAT","TAR","EAT","ATE","TEA","ARE","ERA"]},
+            {l:"BOARD", w:["BOARD","BROAD","ROAD","ROB","ROD","OAR","BAD"], a:["BOAR","DAB","BAR"]},
+            {l:"BREAD", w:["BREAD","READ","BEAR","DEAR","RED","BAD"], a:["BARE","DARE","EAR","ARE","ERA","BAR","BED"]},
+            {l:"TIGER", w:["TIGER","TIRE","RITE","GET"], a:["TRIG","GRIT","TIE"]},
+            {l:"LEMON", w:["LEMON","MELON","MEN","ONE"], a:["NOEL"]},
+            {l:"PEACH", w:["PEACH","EACH","CHEAP","PEA","CAP"], a:["PACE","ACHE","APE","CEP"]},
+            {l:"SPICE", w:["SPICE","PIECE","EPIC","ICE","PIE"], a:["SPEC","SIP"]},
+            {l:"CLOCK", w:["CLOCK","LOCK","COOK"], a:["COCK","COL"]},
+            {l:"CHAIR", w:["CHAIR","HAIR","RICH","AIR","CAR"], a:["CHAR","ARC"]},
+            {l:"NURSE", w:["NURSE","SURE","RUNS","USE","RUN"], a:["RUSE","SUN","URN"]},
+            {l:"SMILE", w:["SMILE","MILES","SLIM","MILE"], a:["ISLE","ELM","LIE"]},
+            {l:"DANCE", w:["DANCE","CANED","DEAN","CANE","AND"], a:["ACED","END","CAN","DAN"]},
+            {l:"BRAIN", w:["BRAIN","RAIN","BRAN","RAN","AIR"], a:["RIB","BAN","BAR"]},
+            {l:"PLANT", w:["PLANT","PLAN","PANT","TAP","PAN"], a:["NAP","LAP","PAL"]},
+            {l:"LISTEN", w:["LISTEN","SILENT","INSET","LINES","TENS","NETS"], a:["LET","SET","TEN","TIN","SIT","LIT","LIST"]},
+            {l:"TEACHER", w:["TEACHER","TEACH","CHEAT","HERE","HEAR","EACH"], a:["TREE","RACE","CARE","TEE","CAT","THE"]},
+            {l:"STUDENT", w:["STUDENT","STUDY","TENT","DUST","NEST","TENS"], a:["NUT","NET","SET","SUN","TEN"]},
+            {l:"SCIENCE", w:["SCIENCE","SCENE","SINCE","NICE","ICE"], a:["SEEN","SEE","SIN"]},
+            {l:"HISTORY", w:["HISTORY","SHIRT","STORY","SHORT","TOYS","SORT"], a:["HOST","ROSY","TOY","SIR","HIT"]},
+            {l:"ENGLISH", w:["ENGLISH","SINGLE","SHINE","LINES","SIGN","SING"], a:["LENS","HENS","HIS","LEG","SIN"]},
+            {l:"MORNING", w:["MORNING","MINOR","IRON","RING","NORM"], a:["ROOM","NOR","ION"]},
+            {l:"EVENING", w:["EVENING","ENGINE","GIVEN","NINE","EVEN"], a:["VEIN","GIVE"]},
+            {l:"ANIMALS", w:["ANIMALS","SNAIL","NAILS","MAIL","SAIL","MAIN"], a:["SLAM","MAN","AIM"]},
+            {l:"PICTURE", w:["PICTURE","PRICE","TRICE","CURE","PURE","RICE"], a:["PIECE","CREPT","PUT","CUP","PET"]},
+            {l:"COUNTRY", w:["COUNTRY","COUNT","COURT","TOUR","CORN","TURN"], a:["COIN","OUT","NUT","NOT"]},
+            {l:"MACHINE", w:["MACHINE","CINEMA","MINCE","CHAIN","NAME"], a:["MICE","CHIN","MAN","CAN","MAC"]},
+            {l:"JOURNEY", w:["JOURNEY","ENJOY","YOURS","JURY","YOUR"], a:["TOUR","JOY","RUN"]},
+            {l:"NOTHING", w:["NOTHING","NIGHT","THING","THIN","HINT"], a:["INTO","NOT","GOT","HOT"]},
+            {l:"WITHOUT", w:["WITHOUT","OUTWITH","YOUTH","WITH","OUT"], a:["HUT","HOW","HIT","TWO"]},
+            {l:"SQUARE", w:["SQUARE","SURE","ERA","EAR","ARE"], a:["SEAR","SEA","USE"]},
+            {l:"MARKET", w:["MARKET","MAKER","TEAM","MAKE","TAKE","MARK"], a:["RATE","TAME","ART","MAT","RAT"]},
+            {l:"GARDEN", w:["GARDEN","DANGER","READ","DEAR","NEAR","GEAR"], a:["DARE","DRAG","RED","AND","RAN"]},
+            {l:"SUMMER", w:["SUMMER","MUSE","SURE","RUM","SUM"], a:["USER","USE"]},
+            {l:"WINTER", w:["WINTER","TWIN","WIRE","WENT","WINE","TEN"], a:["TIRE","RENT","WIN","TIN","NET"]},
+            {l:"CARE", w:["CARE","RACE","CAR","EAR"], a:["ACRE","ARE","ERA","ARC"]}, 
+            {l:"TEAM", w:["TEAM","MEAT","MATE","EAT"], a:["TAME","MAT","TEA","ATE"]},
+            {l:"SPOT", w:["SPOT","POTS","POST","TOP"], a:["OPT","SOT","POT"]},
+            {l:"NOTE", w:["NOTE","TONE","TEN","NOT"], a:["NET","ONE","TOE"]},
+            {l:"PLAY", w:["PLAY","PAL","LAP","LAY"], a:["PAY","YAP"]}
+        ];
+
+        function getCrossWordLevelData(lvlNum) {
+            let idx = (lvlNum - 1) % cwMasterDB.length;
+            return JSON.parse(JSON.stringify(cwMasterDB[idx]));
+        }
+
+        const wordSearchDB = [
+            "ANIMALS|LION,TIGER,BEAR,ZEBRA,PANDA,SNAKE,SHARK,EAGLE",
+            "FOOD|PIZZA,PASTA,BREAD,SALAD,SUSHI,BURGER,CHEESE,TACO",
+            "COLORS|BLUE,GREEN,YELLOW,PURPLE,ORANGE,BLACK,WHITE,BROWN",
+            "FRUITS|APPLE,MANGO,GRAPE,PEACH,CHERRY,BANANA,PAPAYA,MELON",
+            "SPORTS|SOCCER,TENNIS,HOCKEY,CRICKET,RUGBY,GOLF,BOXING,TRACK",
+            "VEHICLES|CAR,BUS,TRAIN,PLANE,TRUCK,BIKE,BOAT,SHIP",
+            "CLOTHES|SHIRT,PANTS,SHOES,SOCKS,COAT,HAT,DRESS,SKIRT",
+            "WEATHER|RAIN,SNOW,WIND,SUN,STORM,CLOUD,FOG,HAIL",
+            "BODY|HEAD,HAND,FOOT,EYE,NOSE,EAR,MOUTH,HAIR",
+            "FAMILY|MOTHER,FATHER,SISTER,BROTHER,UNCLE,AUNT,COUSIN,BABY",
+            "FURNITURE|BED,CHAIR,TABLE,DESK,SOFA,COUCH,LAMP,RUG",
+            "PROFESSIONS|DOCTOR,NURSE,PILOT,CHEF,BAKER,JUDGE,ACTOR,MAYOR",
+            "INSECTS|ANT,BEE,FLY,MOTH,WASP,BUG,MITE,FLEA",
+            "BIRDS|DUCK,SWAN,DOVE,CROW,HAWK,OWL,GULL,LOON",
+            "FLOWERS|ROSE,LILY,DAISY,TULIP,IRIS,POPPY,LOTUS,PANSY",
+            "INSTRUMENTS|PIANO,FLUTE,DRUM,HORN,HARP,LUTE,BELL,GONG",
+            "METALS|GOLD,IRON,ZINC,LEAD,TIN,BRASS,STEEL,COPPER",
+            "PLANETS|MARS,VENUS,EARTH,PLUTO,SATURN,URANUS,NEPTUNE,JUPITER",
+            "MONTHS|APRIL,MARCH,MAY,JUNE,JULY,AUGUST,OCTOBER,JANUARY",
+            "DAYS|MONDAY,FRIDAY,SUNDAY,TUESDAY,THURSDAY,SATURDAY,WEDNESDAY,WEEK",
+            "SEASONS|SPRING,SUMMER,AUTUMN,WINTER,FALL,MONSOON,DRY,WET",
+            "DRINKS|WATER,JUICE,MILK,SODA,TEA,COFFEE,WINE,BEER",
+            "DESSERTS|CAKE,PIE,TART,CANDY,FUDGE,DONUT,SWEET,CHOC",
+            "TREES|OAK,PINE,ELM,ASH,FIR,PALM,MAPLE,WILLOW",
+            "REPTILES|SNAKE,LIZARD,TURTLE,GECKO,SKINK,VIPER,COBRA,ADDER",
+            "SPICES|SALT,MINT,SAGE,DILL,CUMIN,CLOVE,ANISE,BASIL",
+            "TOOLS|SAW,AWL,AXE,FILE,DRILL,VISE,PLIER,CLAMP",
+            "TOYS|DOLL,KITE,BALL,BLOCK,BEAR,YOYO,TRAIN,CAR",
+            "STATIONERY|PEN,TAPE,GLUE,RULER,CLIP,FILE,BOOK,PAGE",
+            "ROOMS|HALL,BATH,KITCHEN,LOFT,ATTIC,CELLAR,PANTRY,PORCH",
+            "EMOTIONS|JOY,ANGER,FEAR,HATE,SAD,HAPPY,PROUD,SHY",
+            "HOBBIES|READ,SING,COOK,BAKE,KNIT,DRAW,PAINT,SWIM",
+            "GEMS|RUBY,OPAL,JADE,PEARL,BERYL,TOPAZ,AGATE,ONYX",
+            "FISH|TUNA,CARP,PIKE,BASS,COD,EEL,SOLE,RAY",
+            "DANCES|TANGO,WALTZ,SALSA,RUMBA,SAMBA,JIVE,POLKA,DISCO",
+            "LANGUAGES|HINDI,FRENCH,DUTCH,GREEK,LATIN,ARABIC,WELSH,IRISH",
+            "COUNTRIES|INDIA,JAPAN,SPAIN,ITALY,CHILE,EGYPT,PERU,CHINA",
+            "CITIES|PARIS,TOKYO,DELHI,ROME,MIAMI,DUBAI,SEOUL,LONDON",
+            "RIVERS|NILE,AMAZON,GANGES,INDUS,RHINE,VOLGA,CONGO,SEINE",
+            "MOUNTAINS|ALPS,ANDES,URALS,ATLAS,ROCKY,HIMALAYA,K2,FUJI",
+            "OCEANS|PACIFIC,ATLANTIC,INDIAN,ARCTIC,SOUTHERN,SEA,GULF,BAY",
+            "CONTINENTS|ASIA,AFRICA,EUROPE,AMERICA,ANTARCTICA,OCEANIA,ISLAND,LAND",
+            "FEELINGS|GLAD,CALM,TENSE,NUMB,WEAK,BOLD,BRAVE,MEEK",
+            "VIRTUES|HOPE,FAITH,LOVE,PEACE,TRUTH,GRACE,MERCY,PIETY",
+            "DISEASES|COLD,FLU,MUMPS,COUGH,FEVER,MEASLES,POX,RABIES",
+            "MEDICINES|PILL,SYRUP,DROPS,BALM,CREAM,SALVE,TONIC,CURE",
+            "ORGANS|LUNG,HEART,LIVER,BRAIN,KIDNEY,SKIN,GUT,VEIN",
+            "BONES|SKULL,RIB,SPINE,FEMUR,TIBIA,PELVIS,JAW,ULNA",
+            "SHAPES|SQUARE,CIRCLE,OVAL,CONE,CUBE,STAR,LINE,RING",
+            "NATURE|ROCK,DIRT,SAND,MUD,CLAY,DUST,SOIL,PEAT"
+        ];
+
+        let wsLevelData = null, wsGrid = [], wsFoundWords = [];
+        let isWSDragging = false, wsDragStart = null, wsDragCurrent = null, wsSolvedHighlights = [];
+
+        function generateWSGrid(wordsStr) {
+            let words = wordsStr.split(',');
+            let grid = Array(10).fill(null).map(()=>Array(10).fill(''));
+            let dirs = [[0,1], [1,0], [1,1]]; 
+            
+            for(let w of words) {
+                let placed = false;
+                for(let attempts=0; attempts<100 && !placed; attempts++) {
+                    let d = dirs[Math.floor(Math.random()*dirs.length)];
+                    let r = Math.floor(Math.random()*10);
+                    let c = Math.floor(Math.random()*10);
+                    if(r + d[0]*w.length <= 10 && c + d[1]*w.length <= 10) {
+                        let canPlace = true;
+                        for(let i=0; i<w.length; i++) {
+                            if(grid[r+d[0]*i][c+d[1]*i] !== '' && grid[r+d[0]*i][c+d[1]*i] !== w[i]) {
+                                canPlace = false; break;
+                            }
+                        }
+                        if(canPlace) {
+                            for(let i=0; i<w.length; i++) grid[r+d[0]*i][c+d[1]*i] = w[i];
+                            placed = true;
+                        }
+                    }
+                }
+            }
+            let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            for(let i=0; i<10; i++) {
+                for(let j=0; j<10; j++) {
+                    if(grid[i][j] === '') grid[i][j] = letters[Math.floor(Math.random()*26)];
+                }
+            }
+            return grid;
+        }
+
+        function getCellFromCoords(x, y) {
+            let el = document.elementFromPoint(x, y);
+            if(el && el.closest('.ws-cell')) {
+                let cell = el.closest('.ws-cell');
+                return { r: parseInt(cell.dataset.r), c: parseInt(cell.dataset.c) };
+            }
+            return null;
+        }
+
+        function getCellCenter(r, c) {
+            let cellEl = document.getElementById(`ws-${r}-${c}`);
+            if(!cellEl) return null;
+            return {
+                x: cellEl.offsetLeft + cellEl.offsetWidth / 2,
+                y: cellEl.offsetTop + cellEl.offsetHeight / 2,
+                size: cellEl.offsetWidth 
+            };
+        }
+
+        function wsHandleStart(e) {
+            let coords = e.touches ? e.touches[0] : e;
+            let cell = getCellFromCoords(coords.clientX, coords.clientY);
+            if(!cell) return;
+            
+            isWSDragging = true;
+            wsDragStart = cell;
+            wsDragCurrent = cell;
+            
+            let line = document.getElementById('ws-selection-line');
+            if(line) {
+                line.style.opacity = '0';
+                line.style.width = '0px';
+            }
+        }
+
+        function wsHandleMove(e) {
+            if(!isWSDragging || !wsDragStart) return;
+            if(e.cancelable) e.preventDefault(); 
+
+            let coords = e.touches ? e.touches[0] : e;
+            let currentCell = getCellFromCoords(coords.clientX, coords.clientY);
+            if(!currentCell) return;
+
+            let dr = currentCell.r - wsDragStart.r;
+            let dc = currentCell.c - wsDragStart.c;
+            
+            if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return; 
+
+            wsDragCurrent = currentCell;
+            drawGeometricLine('ws-selection-line', wsDragStart, currentCell);
+        }
+
+        function wsHandleEnd() {
+            if(!isWSDragging || !wsDragStart || !wsDragCurrent) {
+                isWSDragging = false;
+                wsDragStart = null;
+                wsDragCurrent = null;
+                let line = document.getElementById('ws-selection-line');
+                if(line) line.style.opacity = '0';
+                return;
+            }
+            isWSDragging = false;
+            let line = document.getElementById('ws-selection-line');
+            
+            let endCell = wsDragCurrent;
+
+            let dr = endCell.r - wsDragStart.r;
+            let dc = endCell.c - wsDragStart.c;
+            let len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
+            let stepR = dr === 0 ? 0 : dr / Math.abs(dr);
+            let stepC = dc === 0 ? 0 : dc / Math.abs(dc);
+
+            let selectedWord = "";
+            for(let i=0; i<len; i++) {
+                selectedWord += wsGrid[wsDragStart.r + stepR*i][wsDragStart.c + stepC*i];
+            }
+            let reversedWord = selectedWord.split('').reverse().join('');
+            
+            let words = wsLevelData.split('|')[1].split(',');
+            let foundW = null, finalStart = null, finalEnd = null;
+
+            if(words.includes(selectedWord) && !wsFoundWords.includes(selectedWord)) {
+                foundW = selectedWord; finalStart = wsDragStart; finalEnd = endCell;
+            } else if(words.includes(reversedWord) && !wsFoundWords.includes(reversedWord)) {
+                foundW = reversedWord; finalStart = endCell; finalEnd = wsDragStart; 
+            }
+
+            if(foundW) {
+                addPermanentHighlight(finalStart, finalEnd, foundW, words.indexOf(foundW));
+                wsFoundWords.push(foundW);
+                
+                localStorage.setItem('ep_ws_found', JSON.stringify(wsFoundWords));
+                
+                document.getElementById('ws-word-' + foundW).classList.add('line-through', 'opacity-40');
+                showArenaAlert(true, `Found: ${foundW}!`);
+                
+                if(wsFoundWords.length === words.length) levelComplete();
+            }
+            
+            if(line) line.style.opacity = '0'; 
+            wsDragStart = null;
+            wsDragCurrent = null;
+        }
+
+        function drawGeometricLine(lineId, startCell, endCell, colorObj = null) {
+            let startCenter = getCellCenter(startCell.r, startCell.c);
+            let endCenter = getCellCenter(endCell.r, endCell.c);
+            let line = document.getElementById(lineId);
+            
+            if(!startCenter || !endCenter) return;
+
+            let dx = endCenter.x - startCenter.x;
+            let dy = endCenter.y - startCenter.y;
+            let distance = Math.sqrt(dx*dx + dy*dy);
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            let thickness = startCenter.size * 0.85; 
+            let padding = thickness; 
+
+            let centerX = (startCenter.x + endCenter.x) / 2;
+            let centerY = (startCenter.y + endCenter.y) / 2;
+
+            line.style.width = (distance + padding) + 'px'; 
+            line.style.height = thickness + 'px';
+            line.style.borderRadius = '9999px'; 
+            
+            line.style.left = (centerX - (distance + padding) / 2) + 'px';
+            line.style.top = (centerY - thickness / 2) + 'px';
+
+            line.style.transformOrigin = `center center`;
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.opacity = '1';
+
+            if(colorObj) {
+                line.style.background = colorObj.bg;
+                line.style.border = `2px solid ${colorObj.border}`;
+            } else {
+                line.style.background = 'rgba(168, 85, 247, 0.4)';
+                line.style.border = '2px solid #a855f7';
+            }
+        }
+
+        function addPermanentHighlight(start, end, word, wordIdx) {
+            let color = wsColors[wordIdx % wsColors.length];
+            let highlightId = `ws-highlight-${wsSolvedHighlights.length}`;
+            
+            let highlightEl = document.createElement('div');
+            highlightEl.id = highlightId;
+            highlightEl.className = 'ws-highlight-base';
+            document.getElementById('ws-grid').appendChild(highlightEl);
+            
+            drawGeometricLine(highlightId, start, end, color);
+            wsSolvedHighlights.push(highlightEl);
+            
+            let dr = end.r - start.r, dc = end.c - start.c;
+            let len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
+            let stepR = dr === 0 ? 0 : dr / Math.abs(dr);
+            let stepC = dc === 0 ? 0 : dc / Math.abs(dc);
+            for(let i=0; i<len; i++) {
+                document.getElementById(`ws-${start.r+stepR*i}-${start.c+stepC*i}`).style.color = '#ffffff';
+            }
+        }
+
+        let currentGameMode = "", sessionQ = [], curQIdx = 0, gameScore = 0;
+        let jumbleWords = [], jumbleAnswer = [];
+        let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
+
+        function useHint() {
+            if(remainingHints <= 0) return;
+
+            let hintUsed = false;
+            if(currentGameMode === 'mcq' || currentGameMode === 'match') {
+                let correctAns = (currentGameMode === 'mcq') ? sessionQ[curQIdx].c : sessionQ[curQIdx].a;
+                let btns = document.querySelectorAll('.opt-btn');
+                let disabledCount = 0;
+                btns.forEach((b, i) => {
+                    let isCorrect = (currentGameMode === 'mcq') ? (i === correctAns) : (b.innerText === correctAns);
+                    if(!isCorrect && disabledCount < 2 && !b.disabled) {
+                        b.disabled = true; b.classList.replace('bg-slate-900/90', 'bg-slate-900/40');
+                        b.classList.replace('hover:bg-slate-800/80', 'bg-slate-900/40');
+                        b.classList.add('opacity-40'); disabledCount++;
+                    }
+                });
+                if(disabledCount > 0) hintUsed = true;
+            } else if(currentGameMode === 'jumble') {
+                let correctSentence = sessionQ[curQIdx].split(" ");
+                let nextWordNeeded = correctSentence[jumbleAnswer.length];
+                let wIdx = jumbleWords.findIndex((w, i) => w === nextWordNeeded && !document.getElementById(`j-btn-${i}`).classList.contains('hidden'));
+                if(wIdx !== -1) { clickJumble(nextWordNeeded, wIdx, document.getElementById(`j-btn-${wIdx}`)); hintUsed = true; }
+            } else if(currentGameMode === 'type') {
+                document.getElementById('type-ans-in').value = sessionQ[curQIdx].a; 
+                hintUsed = true;
+            } else if(currentGameMode === 'crossword') {
+                let unfound = cwLevelData.w.find(w => !cwFoundWords.includes(w));
+                if(unfound) { document.getElementById('cw-in').value = unfound; hintUsed = true; }
+            } else if(currentGameMode === 'wordsearch') {
+                let words = wsLevelData.split('|')[1].split(',');
+                let unfound = words.find(w => !wsFoundWords.includes(w));
+                if(unfound) {
+                    let foundPath = null;
+                    let dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[-1,1],[1,-1]];
+                    for(let r=0; r<10 && !foundPath; r++) {
+                        for(let c=0; c<10 && !foundPath; c++) {
+                            if(wsGrid[r][c] === unfound[0]) {
+                                for(let d of dirs) {
+                                    let match = true; let tempPath = [];
+                                    for(let k=0; k<unfound.length; k++) {
+                                        let nr = r + d[0]*k; let nc = c + d[1]*k;
+                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== unfound[k]) { match = false; break; }
+                                        tempPath.push({r: nr, c: nc});
+                                    }
+                                    if(match) { foundPath = tempPath; break; }
+                                }
+                            }
+                        }
+                    }
+                    if(foundPath && foundPath.length > 0) {
+                         let startEl = document.getElementById(`ws-${foundPath[0].r}-${foundPath[0].c}`);
+                         let origColor = startEl.style.color;
+                         startEl.style.color = '#f59e0b'; 
+                         setTimeout(() => startEl.style.color = origColor, 2000);
+                         showArenaAlert(true, `Hint: Look for '${unfound}' starting at highlighted letter!`);
+                         hintUsed = true;
+                    }
+                }
+            }
+
+            if(hintUsed) {
+                remainingHints--;
+                localStorage.setItem('ep_global_hints', remainingHints);
+                document.getElementById('hint-count').innerText = remainingHints;
+                
+                if(remainingHints <= 0) {
+                    let hBtn = document.getElementById('hint-btn');
+                    hBtn.disabled = true;
+                    hBtn.className = "bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-700 transition opacity-50";
+                    hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 opacity-50"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline opacity-50">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300 opacity-50">0</span>`;
+                }
+                refreshDashboardUI();
+            }
+        }
+
+        function initGame(mode) {
+            currentGameMode = mode;
+            document.getElementById('games-menu').classList.add('hidden');
+            document.getElementById('game-arena').classList.remove('hidden');
+            curQIdx = 0; gameScore = 0;
+            document.getElementById('arena-score').innerText = "0";
+
+            let hBtn = document.getElementById('hint-btn');
+
+            if(mode === 'mcq') { sessionQ = getFreshQuestions('ep_pool_mcq', fullMCQData, 5); }
+            else if(mode === 'jumble') { sessionQ = getFreshQuestions('ep_pool_jumble', fullJumbleData, 5); }
+            else if(mode === 'type') { sessionQ = getFreshQuestions('ep_pool_type', fullTypeData, 5); }
+            else if(mode === 'match') { sessionQ = getFreshQuestions('ep_pool_match', fullMatchData, 5); }
+            else if(mode === 'crossword') {
+                let savedCWData = localStorage.getItem('ep_cw_data');
+                let savedCWLevel = parseInt(localStorage.getItem('ep_cw_lvl_saved')) || 0;
+                
+                if (cwCurrentLevel === savedCWLevel && savedCWData) {
+                    cwLevelData = JSON.parse(savedCWData);
+                    cwFoundWords = JSON.parse(localStorage.getItem('ep_cw_found') || "[]");
+                    cwBonusWords = JSON.parse(localStorage.getItem('ep_cw_bonus') || "[]");
+                    gameScore = cwFoundWords.length;
+                    document.getElementById('arena-score').innerText = gameScore;
+                } else {
+                    cwLevelData = getCrossWordLevelData(cwCurrentLevel);
+                    let arr = cwLevelData.l.split('');
+                    do { arr.sort(()=>0.5-Math.random()); } while (arr.join('') === cwLevelData.l && arr.length > 1);
+                    cwLevelData.scrambled = arr.join('');
+                    cwFoundWords = []; cwBonusWords = [];
+                    
+                    localStorage.setItem('ep_cw_data', JSON.stringify(cwLevelData));
+                    localStorage.setItem('ep_cw_lvl_saved', cwCurrentLevel);
+                    localStorage.setItem('ep_cw_found', JSON.stringify(cwFoundWords));
+                    localStorage.setItem('ep_cw_bonus', JSON.stringify(cwBonusWords));
+                }
+            } else if (mode === 'wordsearch') {
+                let savedWSLevel = parseInt(localStorage.getItem('ep_ws_lvl_saved')) || 0;
+                let savedWSData = localStorage.getItem('ep_ws_data');
+                
+                if(wsCurrentLevel === savedWSLevel && savedWSData) {
+                    wsLevelData = savedWSData;
+                    wsGrid = JSON.parse(localStorage.getItem('ep_ws_grid'));
+                    wsFoundWords = JSON.parse(localStorage.getItem('ep_ws_found') || "[]");
+                    gameScore = wsFoundWords.length;
+                    document.getElementById('arena-score').innerText = gameScore;
+                } else {
+                    wsLevelData = wordSearchDB[(wsCurrentLevel - 1) % wordSearchDB.length];
+                    wsGrid = generateWSGrid(wsLevelData.split('|')[1]);
+                    wsFoundWords = [];
+                    localStorage.setItem('ep_ws_data', wsLevelData);
+                    localStorage.setItem('ep_ws_grid', JSON.stringify(wsGrid));
+                    localStorage.setItem('ep_ws_lvl_saved', wsCurrentLevel);
+                    localStorage.setItem('ep_ws_found', JSON.stringify(wsFoundWords));
+                }
+                wsStartCell = null;
+                wsDragCurrent = null;
+                wsSolvedHighlights = [];
+            }
+
+            document.getElementById('hint-count').innerText = remainingHints;
+            if(remainingHints <= 0) {
+                hBtn.disabled = true;
+                hBtn.className = "bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-700 transition opacity-50";
+                hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 opacity-50"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline opacity-50">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300 opacity-50">0</span>`;
+            } else {
+                hBtn.disabled = false;
+                hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+            }
+
+            renderArenaCard();
+        }
+
+        function quitGame() {
+            document.getElementById('game-arena').classList.add('hidden');
+            document.getElementById('games-menu').classList.remove('hidden');
+            window.removeEventListener('mousemove', wsHandleMove);
+            window.removeEventListener('touchmove', wsHandleMove);
+            window.removeEventListener('mouseup', wsHandleEnd);
+            window.removeEventListener('touchend', wsHandleEnd);
+        }
+
+        function renderArenaCard() {
+            const alertBox = document.getElementById('arena-alert');
+            const nextBtn = document.getElementById('arena-next-btn');
+            alertBox.classList.add('hidden'); nextBtn.classList.add('hidden');
+
+            let optArea = document.getElementById('arena-options');
+            optArea.innerHTML = "";
+
+            if(currentGameMode === 'crossword') {
+                let lvlTag = "Level " + cwCurrentLevel;
+                document.getElementById('arena-tag').innerText = `${lvlTag}`;
+                document.getElementById('arena-question').innerHTML = `Form words from:<br><span class="text-3xl font-bold tracking-[0.3em] text-pink-400 mt-2 block">${cwLevelData.scrambled}</span>`;
+                
+                let boardHtml = `<div class="flex flex-col gap-3 w-full max-w-sm mx-auto mb-4" id="cw-board-slots">`;
+                cwLevelData.w.forEach((word, idx) => {
+                    if(cwFoundWords.includes(word)) {
+                        boardHtml += `<div id="cw-slot-${idx}" class="p-3 bg-emerald-500/20 border border-emerald-500 rounded-xl font-bold text-emerald-400 tracking-widest transition">${word}</div>`;
+                    } else {
+                        boardHtml += `<div id="cw-slot-${idx}" class="p-3 bg-slate-800/50 border border-slate-700 rounded-xl font-mono text-slate-500 tracking-widest transition">${"_ ".repeat(word.length).trim()}</div>`;
+                    }
+                });
+                boardHtml += `</div>`;
+
+                boardHtml += `<div class="flex flex-col gap-3 w-full max-w-sm mx-auto mt-4">
+                    <input type="text" id="cw-in" placeholder="Type word..." class="w-full uppercase font-bold text-center bg-slate-900 border border-pink-500/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-400">
+                    <button onclick="checkCWWord()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl font-bold text-white text-sm active:scale-95">Check</button>
+                </div>`;
+                
+                boardHtml += `
+                <div id="cw-bonus-section" class="w-full max-w-sm mx-auto mt-6 text-left ${cwBonusWords.length > 0 ? '' : 'hidden'}">
+                    <div class="text-[11px] text-amber-400 font-bold flex items-center gap-1.5 mb-2"><div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center"><i class="fa-solid fa-lightbulb"></i></div> Bonus Dictionary Words</div>
+                    <div id="cw-bonus-list" class="flex flex-wrap gap-1.5"></div>
+                </div>`;
+                
+                optArea.innerHTML = boardHtml;
+
+                if(cwBonusWords.length > 0) {
+                    setTimeout(() => {
+                        let bHtml = "";
+                        cwBonusWords.forEach(bw => { bHtml += `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-amber-300 text-xs font-bold">${bw}</span>`; });
+                        document.getElementById('cw-bonus-list').innerHTML = bHtml;
+                    }, 0);
+                }
+                return; 
+            } else if (currentGameMode === 'wordsearch') {
+                let parts = wsLevelData.split('|');
+                let theme = parts[0];
+                let words = parts[1].split(',');
+
+                document.getElementById('arena-tag').innerText = `Level ${wsCurrentLevel}/50`;
+                document.getElementById('arena-question').innerHTML = `Theme: <span class="text-indigo-400 font-bold ml-1">${theme}</span><br><span class="text-[10px] text-slate-400 font-normal mt-1 block">Drag over letters to select</span>`;
+                
+                let html = `<div class="flex flex-col gap-4 items-center justify-center w-full">`;
+                
+                html += `<div class="grid grid-cols-10 gap-1 bg-slate-900 p-2 rounded-xl border border-slate-800 relative mx-auto" id="ws-grid">`;
+                html += `<div id="ws-selection-line" style="opacity:0"></div>`;
+                for(let r=0; r<10; r++) {
+                    for(let c=0; c<10; c++) {
+                        html += `<div id="ws-${r}-${c}" data-r="${r}" data-c="${c}" class="ws-cell bg-slate-800 text-slate-200 touch-none select-none">${wsGrid[r][c]}</div>`;
+                    }
+                }
+                html += `</div>`;
+
+                html += `<div class="flex flex-wrap gap-2 justify-center w-full max-w-sm mx-auto" id="ws-word-list">`;
+                words.forEach((w, idx) => {
+                    let colorTheme = wsColors[idx % wsColors.length];
+                    let foundClass = wsFoundWords.includes(w) ? `${colorTheme.bg.replace('0.4','0.2')} text-white border-[${colorTheme.border}] line-through opacity-50` : "bg-slate-800 text-slate-400 border-slate-700";
+                    html += `<div id="ws-word-${w}" class="px-2 py-1 text-[10px] md:text-xs font-bold border rounded-lg ${foundClass} transition">${w}</div>`;
+                });
+                html += `</div></div>`;
+                
+                optArea.innerHTML = html;
+                
+                setTimeout(() => {
+                    let words = wsLevelData.split('|')[1].split(',');
+                    wsFoundWords.forEach(w => {
+                        let colorTheme = wsColors[words.indexOf(w) % wsColors.length];
+                        let dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[-1,1],[1,-1]];
+                        let foundPath = [];
+                        for(let r=0; r<10 && foundPath.length===0; r++) {
+                            for(let c=0; c<10 && foundPath.length===0; c++) {
+                                if(wsGrid[r][c] === w[0]) {
+                                    for(let d of dirs) {
+                                        let match = true; let tempPath = [];
+                                        for(let k=0; k<w.length; k++) {
+                                            let nr = r + d[0]*k; let nc = c + d[1]*k;
+                                            if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== w[k]) { match = false; break; }
+                                            tempPath.push({r: nr, c: nc});
+                                        }
+                                        if(match) { foundPath = tempPath; break; }
+                                    }
+                                }
+                            }
+                        }
+                        if(foundPath.length > 0) {
+                            addPermanentHighlight(foundPath[0], foundPath[foundPath.length-1], w, words.indexOf(w));
+                        }
+                    });
+
+                    let gridEl = document.getElementById('ws-grid');
+                    if(gridEl) {
+                        gridEl.addEventListener('mousedown', wsHandleStart);
+                        gridEl.addEventListener('touchstart', wsHandleStart, {passive: false});
+                    }
+                    window.addEventListener('mousemove', wsHandleMove);
+                    window.addEventListener('touchmove', wsHandleMove, {passive: false});
+                    window.addEventListener('mouseup', wsHandleEnd);
+                    window.addEventListener('touchend', wsHandleEnd);
+                }, 0);
+                
+                return;
+            }
+
+            if(curQIdx >= 5) {
+                document.getElementById('arena-tag').innerText = "Game Complete! 🎉";
+                document.getElementById('arena-question').innerHTML = `Final Score: ${gameScore}/5 <br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                optArea.innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="quitGame()" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-bold rounded-xl transition active:scale-95">Back to Arcade</button></div>`;
+                triggerInterstitial(); 
+                return;
+            }
+
+            document.getElementById('arena-tag').innerText = `Question ${curQIdx + 1}/5`;
+            const data = sessionQ[curQIdx];
+
+            if(currentGameMode === 'mcq') {
+                document.getElementById('arena-question').innerText = data.q;
+                let optsHtml = `<div class="w-full max-w-sm flex flex-col gap-3 mx-auto">`;
+                data.o.forEach((opt, idx) => {
+                    optsHtml += `<button onclick="checkMCQ(this, ${idx})" class="w-full p-3.5 bg-slate-900/90 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-sm font-medium text-left transition active:scale-95 opt-btn">${opt}</button>`;
+                });
+                optsHtml += `</div>`;
+                optArea.innerHTML = optsHtml;
+            } else if(currentGameMode === 'jumble') {
+                document.getElementById('arena-question').innerText = "Join words in correct order:";
+                jumbleAnswer = []; jumbleWords = data.split(" ").sort(()=>0.5-Math.random());
+                let buildHtml = `<div id="jumble-tray" class="min-h-[50px] w-full max-w-sm mx-auto bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 mb-4 justify-center items-center"></div><div id="jumble-pool" class="w-full max-w-sm mx-auto flex flex-wrap justify-center gap-2">`;
+                jumbleWords.forEach((w, i) => { buildHtml += `<button onclick="clickJumble('${w}', ${i}, this)" id="j-btn-${i}" class="word-btn px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg font-medium">${w}</button>`; });
+                buildHtml += `</div><div class="w-full max-w-sm mx-auto"><button onclick="checkJumble()" class="w-full mt-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-xl active:scale-95">Submit Sentence</button></div>`;
+                optArea.innerHTML = buildHtml;
+            } else if(currentGameMode === 'type') {
+                document.getElementById('arena-question').innerText = data.q;
+                optArea.innerHTML = `<div class="w-full max-w-sm mx-auto flex flex-col gap-3"><input type="text" id="type-ans-in" placeholder="Type the exact word..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-center text-white focus:outline-none focus:border-cyan-500 mb-2"><button onclick="checkType()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 font-bold rounded-xl text-black active:scale-95">Submit</button></div>`;
+            } else if(currentGameMode === 'match') {
+                document.getElementById('arena-question').innerText = `Identify the Tense: "${data.q}"`;
+                let pool = [...allTenseNames].sort(()=>0.5-Math.random()).slice(0,3);
+                if(!pool.includes(data.a)) pool[0] = data.a; 
+                else pool.push(allTenseNames.find(t=>!pool.includes(t)));
+                
+                let optsHtml = `<div class="w-full max-w-sm flex flex-col gap-3 mx-auto">`;
+                pool.sort(()=>0.5-Math.random()).forEach((v) => {
+                    optsHtml += `<button onclick="checkMatch(this, '${v}')" class="w-full p-3.5 bg-slate-900/90 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-sm font-medium text-center transition active:scale-95 opt-btn">${v}</button>`;
+                });
+                optsHtml += `</div>`;
+                optArea.innerHTML = optsHtml;
+            }
+        }
+
+        function checkCWWord() {
+            let inputF = document.getElementById('cw-in');
+            let uWord = inputF.value.trim().toUpperCase();
+            inputF.value = "";
+            let alertBox = document.getElementById('arena-alert');
+            
+            if(cwFoundWords.includes(uWord) || cwBonusWords.includes(uWord)) {
+                showArenaAlert(false, "Word already found!");
+                return;
+            }
+
+            if(cwLevelData.w.includes(uWord)) {
+                cwFoundWords.push(uWord);
+                localStorage.setItem('ep_cw_found', JSON.stringify(cwFoundWords)); 
+
+                gameScore++; document.getElementById('arena-score').innerText = gameScore;
+                showArenaAlert(true, "Awesome!");
+                
+                let slotIdx = cwLevelData.w.indexOf(uWord);
+                let slotEl = document.getElementById(`cw-slot-${slotIdx}`);
+                slotEl.className = "p-3 bg-emerald-500/20 border border-emerald-500 rounded-xl font-bold text-emerald-400 tracking-widest transition transform scale-105";
+                slotEl.innerText = uWord;
+                setTimeout(() => slotEl.classList.remove('scale-105', 'transform'), 300);
+                
+                if(cwFoundWords.length === cwLevelData.w.length) { 
+                    xpPoints += 100; userCoins += 50; 
+                    cwCurrentLevel++; 
+                    document.getElementById('cw-lvl-badge').innerText = cwCurrentLevel;
+                    refreshDashboardUI(); 
+                    
+                    setTimeout(() => {
+                        document.getElementById('arena-tag').innerText = "Level Complete! 🎉";
+                        document.getElementById('arena-question').innerHTML = `Amazing! You found all words.<br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                        document.getElementById('arena-options').innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="initGame('crossword')" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl active:scale-95 mt-4">Play Next Level</button></div>`;
+                        alertBox.classList.add('hidden');
+                        triggerInterstitial(); 
+                    }, 500);
+                }
+            } else if (cwLevelData.a && cwLevelData.a.includes(uWord)) {
+                cwBonusWords.push(uWord);
+                localStorage.setItem('ep_cw_bonus', JSON.stringify(cwBonusWords)); 
+
+                xpPoints += 5; refreshDashboardUI();
+                showArenaAlert(true, "Bonus Dictionary Word! +5 XP 🌟");
+
+                document.getElementById('cw-bonus-section').classList.remove('hidden');
+                document.getElementById('cw-bonus-list').innerHTML += `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-amber-300 text-xs font-bold">${uWord}</span>`;
+            } else {
+                showArenaAlert(false, "Not in the puzzle dictionary!");
+            }
+        }
+
+        function showArenaAlert(isCorrect, text, correctAns = null) {
+            const alertBox = document.getElementById('arena-alert');
+            if (isCorrect) {
+                alertBox.className = `mt-4 p-4 rounded-xl text-sm font-bold block text-center mx-auto w-full max-w-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`;
+                alertBox.innerHTML = `🎉 ${text}`;
+            } else {
+                alertBox.className = `mt-4 p-4 rounded-xl text-sm block text-center mx-auto w-full max-w-sm bg-red-500/10 border border-red-500/20`;
+                if (correctAns) {
+                    alertBox.innerHTML = `❌ <span class="font-bold text-red-400">${text}</span><br><span class="text-xs text-slate-300 mt-2 block">Correct Answer:</span><span class="text-emerald-400 font-black text-lg block mt-1">${correctAns}</span>`;
+                } else {
+                    alertBox.innerHTML = `❌ <span class="font-bold text-red-400">${text}</span>`;
+                }
+            }
+            alertBox.classList.remove('hidden');
+            if(isCorrect && (text.includes("Awesome") || text.includes("Bonus") || text.includes("Hint") || text.includes("Level Complete"))) {
+                 setTimeout(() => alertBox.classList.add('hidden'), 2000);
+            }
+        }
+
+        function levelComplete() {
+            wsCurrentLevel++; xpPoints += 100; userCoins += 50;
+            refreshDashboardUI();
+            
+            setTimeout(() => {
+                document.getElementById('arena-tag').innerText = "Level Complete! 🎉";
+                document.getElementById('arena-question').innerHTML = `Superb! You found all words.<br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                document.getElementById('arena-options').innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="initGame('wordsearch')" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-bold rounded-xl active:scale-95 mt-4">Play Next Level</button></div>`;
+                document.getElementById('arena-alert').classList.add('hidden');
+                triggerInterstitial();
+            }, 800);
+        }
+
+        function checkMCQ(btn, idx) {
+            document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+            let correctIdx = sessionQ[curQIdx].c;
+            let isCorrect = (idx === correctIdx);
+            
+            btn.classList.replace('bg-slate-900/90', isCorrect ? 'bg-emerald-900' : 'bg-red-900');
+            
+            if(!isCorrect) {
+                let correctBtn = document.querySelectorAll('.opt-btn')[correctIdx];
+                correctBtn.classList.replace('bg-slate-900/90', 'bg-emerald-900');
+                correctBtn.classList.add('border-emerald-500', 'text-emerald-400');
+            }
+            
+            showArenaAlert(isCorrect, isCorrect ? "Correct Answer!" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].o[correctIdx]);
+            if(isCorrect) gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function clickJumble(word, idx, btnObj) {
+            btnObj.classList.add('hidden'); jumbleAnswer.push({w: word, i: idx}); renderJumbleTray();
+        }
+        function removeJumble(arrIdx) {
+            let item = jumbleAnswer.splice(arrIdx, 1)[0];
+            document.getElementById(`j-btn-${item.i}`).classList.remove('hidden'); renderJumbleTray();
+        }
+        function renderJumbleTray() {
+            let tray = document.getElementById('jumble-tray'); tray.innerHTML = "";
+            jumbleAnswer.forEach((item, arrIdx) => { tray.innerHTML += `<span onclick="removeJumble(${arrIdx})" class="px-3 py-1 bg-cyan-600 text-white rounded-lg cursor-pointer">${item.w}</span>`; });
+        }
+
+        function checkJumble() {
+            let userStr = jumbleAnswer.map(i => i.w).join(" ");
+            let realStr = sessionQ[curQIdx];
+            let isCorrect = userStr === realStr;
+            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : realStr);
+            if(isCorrect) gameScore++;
+            document.getElementById('jumble-pool').innerHTML = ""; 
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function checkType() {
+            let uIn = document.getElementById('type-ans-in'); uIn.disabled = true;
+            let realAns = sessionQ[curQIdx].a.toLowerCase();
+            let isCorrect = uIn.value.trim().toLowerCase() === realAns;
+            
+            if(!isCorrect) {
+                uIn.value = sessionQ[curQIdx].a;
+                uIn.classList.add('text-emerald-400', 'border-emerald-500', 'font-bold');
+                uIn.classList.remove('text-white', 'border-slate-700');
+            } else {
+                uIn.classList.add('text-emerald-400');
+                uIn.classList.remove('text-white');
+            }
+            
+            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].a);
+            if(isCorrect) gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function checkMatch(btn, val) {
+            document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+            let correctVal = sessionQ[curQIdx].a;
+            let isCorrect = val === correctVal;
+            
+            btn.classList.replace('bg-slate-900/90', isCorrect ? 'bg-emerald-900' : 'bg-red-900');
+            
+            if(!isCorrect) {
+                document.querySelectorAll('.opt-btn').forEach(b => {
+                    if(b.innerText === correctVal) {
+                        b.classList.replace('bg-slate-900/90', 'bg-emerald-900');
+                        b.classList.add('border-emerald-500', 'text-emerald-400');
+                    }
+                });
+            }
+            
+            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : correctVal);
+            if(isCorrect) gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
+        function nextGameLevel() { 
+            curQIdx++; 
+            if(curQIdx === 5 && !['wordsearch', 'crossword'].includes(currentGameMode)) {
+                xpPoints += 100;
+                userCoins += 50;
+                refreshDashboardUI();
+            }
+            renderArenaCard(); 
+        }
     </script>
 </body>
 </html>
