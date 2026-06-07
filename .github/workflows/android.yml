@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Setup Java (Android needs Java 17)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -29,11 +29,15 @@ jobs:
       - name: Install NPM Dependencies
         run: npm install
 
-      - name: Prepare Web Files (Copy to www)
+      - name: Prepare Web Files
         run: npm run build
 
       - name: Setup Android Platform
         run: npx cap add android
+
+      - name: Inject AdMob App ID
+        run: |
+          sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-9418296168496664~5196058331"/>' android/app/src/main/AndroidManifest.xml
 
       - name: Generate App Icons and Splash
         run: npx @capacitor/assets generate --android
