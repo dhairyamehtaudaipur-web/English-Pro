@@ -35,9 +35,9 @@ jobs:
       - name: Setup Android Platform
         run: npx cap add android
 
-      - name: Inject AdMob App ID
+      - name: Inject AdMob App ID Safely
         run: |
-          sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-9418296168496664~5196058331"/>' android/app/src/main/AndroidManifest.xml
+          sed -i 's|</application>|    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-9418296168496664~5196058331"/>\n</application>|' android/app/src/main/AndroidManifest.xml
 
       - name: Generate App Icons and Splash
         run: npx @capacitor/assets generate --android
