@@ -220,8 +220,11 @@
                         </div>
                     </div>
                     
-                    <div class="mt-3 text-center">
-                        <p class="text-[10px] text-slate-400">Available Hints: <span id="dash-hints" class="text-amber-400 font-bold">3 💡</span></p>
+                    <div class="mt-4 text-center border-t border-slate-800/60 pt-4 flex items-center justify-between">
+                        <p class="text-[10px] text-slate-400 font-medium">Available Hints: <span id="dash-hints" class="text-amber-400 font-bold">3 💡</span></p>
+                        <button onclick="watchAdForCoins()" class="bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] font-bold active:scale-95 transition uppercase tracking-wide">
+                            <i class="fa-solid fa-video"></i> Watch Ad: +50 🪙
+                        </button>
                     </div>
                 </div>
 
@@ -601,8 +604,11 @@
         let xpPoints = 0, userCoins = 0, streakDays = 0;
         let cwCurrentLevel = 1, wsCurrentLevel = 1;
         let remainingHints = 3; 
+        
+        // Tracking variable for AdMob Reward
+        let pendingRewardType = '';
 
-        // UPDATED ADMOB LOGIC WITH ESM PLUGIN FIX (USING REAL IDS)
+        // UPDATED ADMOB LOGIC WITH REAL IDS AND MULTI-REWARD SUPPORT
         async function initAdMob() {
             try {
                 if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
@@ -610,13 +616,11 @@
                     return;
                 }
                 
-                // Wait for ES Module to load the Plugin
                 if (!window.AdMobPlugin) {
-                    setTimeout(initAdMob, 500); // Retry after 500ms
+                    setTimeout(initAdMob, 500);
                     return;
                 }
                 
-                // Real IDs integrated here. isTesting is FALSE.
                 await window.AdMobPlugin.initialize();
                 
                 setTimeout(async () => {
@@ -645,17 +649,25 @@
                 }, 2000);
 
                 window.AdMobPlugin.addListener('onRewardedVideoAdReward', () => {
-                    remainingHints++;
-                    localStorage.setItem('ep_global_hints', remainingHints);
-                    refreshDashboardUI();
-                    showToast("Free Hint Earned! (+1 💡)", true);
-                    
-                    if(!document.getElementById('game-arena').classList.contains('hidden')) {
-                        let hBtn = document.getElementById('hint-btn');
-                        hBtn.disabled = false;
-                        hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
-                        hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+                    if (pendingRewardType === 'coins') {
+                        userCoins += 50;
+                        showToast("Earned 50 Coins! 🪙", true);
+                    } else {
+                        remainingHints++;
+                        showToast("Free Hint Earned! (+1 💡)", true);
+                        if(!document.getElementById('game-arena').classList.contains('hidden')) {
+                            let hBtn = document.getElementById('hint-btn');
+                            hBtn.disabled = false;
+                            hBtn.className = "bg-amber-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-500/30 active:scale-95 transition";
+                            hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300">${remainingHints}</span>`;
+                        }
                     }
+                    
+                    localStorage.setItem('ep_global_hints', remainingHints);
+                    localStorage.setItem('ep_coins', userCoins);
+                    refreshDashboardUI();
+                    
+                    // Prep next ad
                     window.AdMobPlugin.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
                 });
             } catch (e) { 
@@ -671,7 +683,8 @@
             } catch(e) {}
         }
 
-        async function triggerRewarded() {
+        async function triggerRewarded(rewardType) {
+            pendingRewardType = rewardType;
             if (!window.AdMobPlugin) {
                 showToast("Ads work in mobile app only!", false);
                 return;
@@ -715,8 +728,13 @@
                 }
             } else {
                 showToast(`Not enough Coins! Loading Free Ad...`, false);
-                triggerRewarded();
+                triggerRewarded('hint');
             }
+        }
+        
+        function watchAdForCoins() {
+            showToast("Loading Ad...", true);
+            triggerRewarded('coins');
         }
 
         function initAppSystem() {
@@ -1664,7 +1682,7 @@
 
             if(curQIdx >= 5) {
                 document.getElementById('arena-tag').innerText = "Game Complete! 🎉";
-                document.getElementById('arena-question').innerHTML = `Final Score: ${gameScore}/5 <br><span class="text-emerald-400 text-sm mt-2 block">+100 XP | +50 Coins 🪙</span>`;
+                document.getElementById('arena-question').innerHTML = `Final Score: ${gameScore}/5 <br><span class="text-emerald-400 text-sm mt-2 block">Great Job! 🎉</span>`;
                 optArea.innerHTML = `<div class="w-full max-w-sm mx-auto"><button onclick="quitGame()" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-bold rounded-xl transition active:scale-95">Back to Arcade</button></div>`;
                 triggerInterstitial(); 
                 return;
@@ -1758,7 +1776,6 @@
             }
         }
 
-        // === SHOW GREEN CORRECT ANSWER ALERT ===
         function showArenaAlert(isCorrect, text, correctAns = null) {
             const alertBox = document.getElementById('arena-alert');
             if (isCorrect) {
@@ -1791,6 +1808,14 @@
             }, 800);
         }
 
+        function handleInstantReward() {
+            xpPoints += 20;
+            userCoins += 10;
+            refreshDashboardUI();
+            gameScore++;
+            document.getElementById('arena-next-btn').classList.remove('hidden');
+        }
+
         function checkMCQ(btn, idx) {
             document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
             let correctIdx = sessionQ[curQIdx].c;
@@ -1804,9 +1829,9 @@
                 correctBtn.classList.add('border-emerald-500', 'text-emerald-400');
             }
             
-            showArenaAlert(isCorrect, isCorrect ? "Correct Answer!" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].o[correctIdx]);
-            if(isCorrect) gameScore++;
-            document.getElementById('arena-next-btn').classList.remove('hidden');
+            showArenaAlert(isCorrect, isCorrect ? "Correct! +20 XP & +10 🪙" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].o[correctIdx]);
+            if(isCorrect) handleInstantReward();
+            else document.getElementById('arena-next-btn').classList.remove('hidden');
         }
 
         function clickJumble(word, idx, btnObj) {
@@ -1825,10 +1850,11 @@
             let userStr = jumbleAnswer.map(i => i.w).join(" ");
             let realStr = sessionQ[curQIdx];
             let isCorrect = userStr === realStr;
-            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : realStr);
-            if(isCorrect) gameScore++;
+            showArenaAlert(isCorrect, isCorrect ? "Correct! +20 XP & +10 🪙" : "Wrong!", isCorrect ? null : realStr);
+            
             document.getElementById('jumble-pool').innerHTML = ""; 
-            document.getElementById('arena-next-btn').classList.remove('hidden');
+            if(isCorrect) handleInstantReward();
+            else document.getElementById('arena-next-btn').classList.remove('hidden');
         }
 
         function checkType() {
@@ -1845,9 +1871,10 @@
                 uIn.classList.remove('text-white');
             }
             
-            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].a);
-            if(isCorrect) gameScore++;
-            document.getElementById('arena-next-btn').classList.remove('hidden');
+            showArenaAlert(isCorrect, isCorrect ? "Correct! +20 XP & +10 🪙" : "Wrong!", isCorrect ? null : sessionQ[curQIdx].a);
+            
+            if(isCorrect) handleInstantReward();
+            else document.getElementById('arena-next-btn').classList.remove('hidden');
         }
 
         function checkMatch(btn, val) {
@@ -1866,18 +1893,14 @@
                 });
             }
             
-            showArenaAlert(isCorrect, isCorrect ? "Correct!" : "Wrong!", isCorrect ? null : correctVal);
-            if(isCorrect) gameScore++;
-            document.getElementById('arena-next-btn').classList.remove('hidden');
+            showArenaAlert(isCorrect, isCorrect ? "Correct! +20 XP & +10 🪙" : "Wrong!", isCorrect ? null : correctVal);
+            
+            if(isCorrect) handleInstantReward();
+            else document.getElementById('arena-next-btn').classList.remove('hidden');
         }
 
         function nextGameLevel() { 
             curQIdx++; 
-            if(curQIdx === 5 && !['wordsearch', 'crossword'].includes(currentGameMode)) {
-                xpPoints += 100;
-                userCoins += 50;
-                refreshDashboardUI();
-            }
             renderArenaCard(); 
         }
     </script>
