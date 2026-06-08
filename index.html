@@ -35,24 +35,21 @@
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Custom Splash Screen */
-        #custom-splash { transition: opacity 0.5s ease-out; z-index: 9999; }
-        .splash-pulse { animation: pulseGlow 2s infinite; }
-        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(6, 182, 212, 0); } 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); } }
+        /* Full Screen Custom Splash Screen with Uploaded Image */
+        #custom-splash { 
+            position: fixed; inset: 0; z-index: 99999;
+            background-color: #090A0F;
+            background-image: url('assets/splash.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: opacity 0.5s ease-out; 
+        }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="initApp()">
 
-    <div id="custom-splash" class="fixed inset-0 bg-[#090A0F] flex flex-col items-center justify-center">
-        <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full filter blur-[100px]"></div>
-        <div class="absolute bottom-10 right-0 w-72 h-72 bg-purple-500/20 rounded-full filter blur-[100px]"></div>
-        
-        <div class="w-24 h-24 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-3xl flex items-center justify-center text-4xl text-black shadow-lg shadow-cyan-500/30 splash-pulse mb-6">
-            <i class="fa-solid fa-bolt"></i>
-        </div>
-        <h1 class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 tracking-wider">EnglishPro</h1>
-        <p class="text-xs text-slate-400 mt-2 font-medium tracking-widest uppercase">Premium Learning</p>
-    </div>
+    <div id="custom-splash"></div>
 
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
@@ -71,17 +68,6 @@
             <div id="form-login" class="block space-y-4">
                 <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
                 
-                <button onclick="handleGoogleLogin()" class="w-full py-3 bg-white hover:bg-gray-100 text-black rounded-xl font-semibold text-sm transition flex items-center justify-center gap-3 shadow-md mb-4">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-                    Continue with Google
-                </button>
-
-                <div class="flex items-center my-4">
-                    <div class="flex-1 border-t border-slate-700"></div>
-                    <span class="px-3 text-xs text-slate-500 font-medium uppercase">Or Email</span>
-                    <div class="flex-1 border-t border-slate-700"></div>
-                </div>
-
                 <input type="email" id="log-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition">
                 
                 <div class="relative">
@@ -105,17 +91,6 @@
 
             <div id="form-signup" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-4">Join EnglishPro 🚀</h2>
-                
-                <button onclick="handleGoogleLogin()" class="w-full py-3 bg-white hover:bg-gray-100 text-black rounded-xl font-semibold text-sm transition flex items-center justify-center gap-3 shadow-md mb-4">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-                    Sign up with Google
-                </button>
-
-                <div class="flex items-center my-4">
-                    <div class="flex-1 border-t border-slate-700"></div>
-                    <span class="px-3 text-xs text-slate-500 font-medium uppercase">Or Email</span>
-                    <div class="flex-1 border-t border-slate-700"></div>
-                </div>
 
                 <input type="text" id="sign-name" placeholder="Full Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
                 <input type="email" id="sign-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
@@ -404,13 +379,7 @@
                 <i class="fa-solid fa-trophy text-lg"></i><span class="text-[10px] font-medium">Rank</span>
             </button>
         </nav>
-    </div> <script type="module">
-        // Import AdMob directly from ESM to bypass missing plugin error in raw HTML
-        import { AdMob } from 'https://esm.sh/@capacitor-community/admob@6.0.0';
-        window.AdMobPlugin = AdMob;
-    </script>
-
-    <script>
+    </div> <script>
         // --- 0. CUSTOM SPLASH SCREEN LOGIC ---
         function initApp() {
             setTimeout(() => {
@@ -543,11 +512,6 @@
             btnLoading('btn-forgot', false, 'Send Reset Link');
         }
 
-        async function handleGoogleLogin() {
-            showToast("Google Login disabled for Android APK stability. Please use Email Signup.", false);
-            switchAuthView('signup');
-        }
-
         function handleLogout() {
             auth.signOut().then(() => showToast("Logged out", true));
         }
@@ -608,7 +572,7 @@
         // Tracking variable for AdMob Reward
         let pendingRewardType = '';
 
-        // UPDATED ADMOB LOGIC WITH REAL IDS AND MULTI-REWARD SUPPORT
+        // UPDATED ADMOB LOGIC WITH DIRECT PLUGINS ACCESS
         async function initAdMob() {
             try {
                 if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
@@ -616,16 +580,17 @@
                     return;
                 }
                 
-                if (!window.AdMobPlugin) {
-                    setTimeout(initAdMob, 500);
+                const AdMob = window.Capacitor.Plugins.AdMob;
+                if (!AdMob) {
+                    showToast("AdMob Plugin not found. Rebuilding APK might be needed.", false);
                     return;
                 }
                 
-                await window.AdMobPlugin.initialize();
+                await AdMob.initialize();
                 
                 setTimeout(async () => {
                     try {
-                        await window.AdMobPlugin.showBanner({ 
+                        await AdMob.showBanner({ 
                             adId: 'ca-app-pub-9418296168496664/9353961049', 
                             adSize: 'BANNER', 
                             position: 'BOTTOM_CENTER', 
@@ -633,12 +598,12 @@
                             isTesting: false 
                         });
                         
-                        await window.AdMobPlugin.prepareInterstitial({ 
+                        await AdMob.prepareInterstitial({ 
                             adId: 'ca-app-pub-9418296168496664/9299640637',
                             isTesting: false 
                         });
                         
-                        await window.AdMobPlugin.prepareRewardVideoAd({ 
+                        await AdMob.prepareRewardVideoAd({ 
                             adId: 'ca-app-pub-9418296168496664/8266064487',
                             isTesting: false 
                         });
@@ -648,7 +613,7 @@
                     }
                 }, 2000);
 
-                window.AdMobPlugin.addListener('onRewardedVideoAdReward', () => {
+                AdMob.addListener('onRewardedVideoAdReward', () => {
                     if (pendingRewardType === 'coins') {
                         userCoins += 50;
                         showToast("Earned 50 Coins! 🪙", true);
@@ -668,7 +633,7 @@
                     refreshDashboardUI();
                     
                     // Prep next ad
-                    window.AdMobPlugin.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
+                    AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
                 });
             } catch (e) { 
                 console.log("Critical AdMob Error: ", e.message);
@@ -676,21 +641,23 @@
         }
 
         async function triggerInterstitial() {
-            if (!window.AdMobPlugin) return;
+            const AdMob = window.Capacitor?.Plugins?.AdMob;
+            if (!AdMob) return;
             try {
-                await window.AdMobPlugin.showInterstitial();
-                await window.AdMobPlugin.prepareInterstitial({ adId: 'ca-app-pub-9418296168496664/9299640637', isTesting: false });
+                await AdMob.showInterstitial();
+                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-9418296168496664/9299640637', isTesting: false });
             } catch(e) {}
         }
 
         async function triggerRewarded(rewardType) {
             pendingRewardType = rewardType;
-            if (!window.AdMobPlugin) {
+            const AdMob = window.Capacitor?.Plugins?.AdMob;
+            if (!AdMob) {
                 showToast("Ads work in mobile app only!", false);
                 return;
             }
             try { 
-                await window.AdMobPlugin.showRewardVideoAd(); 
+                await AdMob.showRewardVideoAd(); 
             } catch(e) { 
                 showToast("Ad loading, please try again.", false); 
             }
@@ -1776,6 +1743,7 @@
             }
         }
 
+        // === SHOW GREEN CORRECT ANSWER ALERT ===
         function showArenaAlert(isCorrect, text, correctAns = null) {
             const alertBox = document.getElementById('arena-alert');
             if (isCorrect) {
