@@ -35,21 +35,38 @@
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Full Screen Custom Splash Screen - User image based */
+        /* Full Screen Custom Splash Screen */
         #custom-splash { 
             position: fixed; inset: 0; z-index: 99999;
             background-color: #090A0F;
-            background-image: url('assets/splash.jpg'); /* Make sure your image is named splash.jpg inside assets */
+            background-image: url('assets/splash.png'); /* IMPORTANT: Ensure your 2732x2732 image is named splash.png in assets folder */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            transition: opacity 0.8s ease-out; 
+            transition: opacity 0.6s ease-out; 
+        }
+        
+        /* Network Issue Overlay */
+        #network-error {
+            position: fixed; inset: 0; z-index: 99998;
+            background-color: rgba(9, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex; flex-col; items-center; justify-center;
         }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="initApp()">
+<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]">
 
     <div id="custom-splash"></div>
+
+    <div id="network-error" class="hidden flex-col items-center justify-center text-center p-6">
+        <div class="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 text-4xl mb-6 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+            <i class="fa-solid fa-wifi"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-white">Connection Lost</h2>
+        <p class="text-sm text-slate-400 max-w-xs mx-auto">EnglishPro requires an active internet connection to sync your progress and load games. Please check your network.</p>
+        <button onclick="checkNetwork()" class="mt-8 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-black active:scale-95 transition">Try Again</button>
+    </div>
 
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
@@ -91,7 +108,7 @@
 
             <div id="form-signup" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-4">Join EnglishPro 🚀</h2>
-                
+
                 <input type="text" id="sign-name" placeholder="Full Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition mt-2">
                 <input type="email" id="sign-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition">
                 
@@ -380,16 +397,40 @@
             </button>
         </nav>
     </div> <script>
-        // --- 0. CUSTOM SPLASH SCREEN LOGIC ---
-        function initApp() {
-            setTimeout(() => {
-                const splash = document.getElementById('custom-splash');
-                if(splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => splash.classList.add('hidden'), 500);
+        // --- 0. STRICT ONLINE NETWORK CHECKER ---
+        function checkNetwork() {
+            const netError = document.getElementById('network-error');
+            const authSec = document.getElementById('auth-section');
+            const appLayout = document.getElementById('app-layout');
+            const splash = document.getElementById('custom-splash');
+            
+            if (!navigator.onLine) {
+                // Offline
+                netError.classList.remove('hidden');
+                netError.classList.add('flex');
+                authSec.classList.add('hidden');
+                appLayout.classList.add('hidden');
+                appLayout.classList.remove('flex');
+                if(splash) splash.classList.add('hidden');
+            } else {
+                // Online
+                netError.classList.add('hidden');
+                netError.classList.remove('flex');
+                // The auth observer will handle showing the correct layout
+                if(auth.currentUser) {
+                    appLayout.classList.remove('hidden');
+                    appLayout.classList.add('flex');
+                } else {
+                    // Only show auth if splash is done
+                    if(splash && splash.classList.contains('hidden')) {
+                        authSec.classList.remove('hidden');
+                    }
                 }
-            }, 3500); // 3.5 seconds full screen splash
+            }
         }
+        
+        window.addEventListener('online', checkNetwork);
+        window.addEventListener('offline', checkNetwork);
 
         // --- 1. FIREBASE SETUP & AUTH LOGIC ---
         const firebaseConfig = {
@@ -409,7 +450,20 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Listen for Auth State changes & Smart Splash Removal
         auth.onAuthStateChanged(user => {
+            // Smart Splash removal - hide ONLY when Firebase is ready
+            const splash = document.getElementById('custom-splash');
+            if(splash && !splash.classList.contains('hidden')) {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.classList.add('hidden');
+                    checkNetwork(); // Re-trigger network check after splash hides
+                }, 600);
+            }
+
+            if (!navigator.onLine) return; // Don't show app if offline
+
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-layout').classList.remove('hidden');
@@ -458,6 +512,7 @@
         }
 
         async function handleLogin() {
+            if (!navigator.onLine) return showToast("No internet connection", false);
             const email = document.getElementById('log-email').value.trim();
             const pwd = document.getElementById('log-pwd').value;
             const remember = document.getElementById('log-remember').checked;
@@ -477,6 +532,7 @@
         }
 
         async function handleSignup() {
+            if (!navigator.onLine) return showToast("No internet connection", false);
             const name = document.getElementById('sign-name').value.trim();
             const email = document.getElementById('sign-email').value.trim();
             const pwd = document.getElementById('sign-pwd').value;
@@ -496,6 +552,7 @@
         }
 
         async function handleForgot() {
+            if (!navigator.onLine) return showToast("No internet connection", false);
             const email = document.getElementById('for-email').value.trim();
             if(!email) return showToast("Enter registered email", false);
 
@@ -519,6 +576,11 @@
             let container = document.getElementById('lb-container');
             container.innerHTML = '<p class="text-center text-slate-400 text-sm py-4"><span class="loader"></span> Loading Live Data...</p>';
             
+            if (!navigator.onLine) {
+                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Cannot load leaderboard offline.</p>';
+                return;
+            }
+
             try {
                 const snapshot = await db.collection('users').orderBy('xp', 'desc').limit(15).get();
                 let html = '<div class="space-y-3">';
@@ -558,7 +620,7 @@
                 html += '</div>';
                 container.innerHTML = html;
             } catch(e) {
-                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Failed to load leaderboard. Set Firebase Rules.</p>';
+                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Failed to load leaderboard.</p>';
             }
         }
 
@@ -577,19 +639,16 @@
                     return;
                 }
 
-                // Safely wait a moment for the native bridge to inject plugins
                 await new Promise(r => setTimeout(r, 1000));
                 
                 const AdMob = window.Capacitor?.Plugins?.AdMob;
                 if (!AdMob) {
-                    console.log("AdMob native bridge not found. Sync via Github Action.");
+                    console.log("AdMob native bridge not found.");
                     return;
                 }
                 
-                // Initialize AdMob
                 await AdMob.initialize();
                 
-                // Preload all ads
                 setTimeout(async () => {
                     try {
                         await AdMob.showBanner({ 
@@ -615,7 +674,6 @@
                     }
                 }, 1500);
 
-                // Listen for Reward event
                 AdMob.addListener('onRewardedVideoAdReward', () => {
                     if (pendingRewardType === 'coins') {
                         userCoins += 50;
@@ -752,8 +810,7 @@
             localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
             localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
 
-            // Sync to Live Firestore
-            if(auth.currentUser) {
+            if(auth.currentUser && navigator.onLine) {
                 db.collection('users').doc(auth.currentUser.uid).set({
                     name: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
                     xp: xpPoints
@@ -847,6 +904,10 @@
 
         function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
         function triggerChatAction() {
+            if (!navigator.onLine) {
+                checkNetwork();
+                return;
+            }
             const chatBox = document.getElementById('chat-input');
             let msg = chatBox.value.trim().toLowerCase();
             if(!msg) return;
@@ -1380,6 +1441,10 @@
         let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
 
         function useHint() {
+            if (!navigator.onLine) {
+                checkNetwork();
+                return;
+            }
             if(remainingHints <= 0) return;
 
             let hintUsed = false;
@@ -1455,6 +1520,10 @@
         }
 
         function initGame(mode) {
+            if (!navigator.onLine) {
+                checkNetwork();
+                return;
+            }
             currentGameMode = mode;
             document.getElementById('games-menu').classList.add('hidden');
             document.getElementById('game-arena').classList.remove('hidden');
