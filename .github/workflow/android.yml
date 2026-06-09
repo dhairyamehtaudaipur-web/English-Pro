@@ -2,9 +2,8 @@ name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ "**" ] # Ye ab har branch (main, master) par automatic chalega!
+  workflow_dispatch: # Ye aapko manual 'Run workflow' ka button bhi de dega
 
 jobs:
   build:
