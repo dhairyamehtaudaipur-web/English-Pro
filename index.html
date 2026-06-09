@@ -35,11 +35,11 @@
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Perfect Full-Screen Custom Splash */
+        /* Full Screen Custom Splash Screen - User image based */
         #custom-splash { 
             position: fixed; inset: 0; z-index: 99999;
             background-color: #090A0F;
-            background-image: url('assets/splash.png'); /* Ensure this image exists in your assets folder */
+            background-image: url('assets/splash.jpg'); /* Make sure your image is named splash.jpg inside assets */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -388,7 +388,7 @@
                     splash.style.opacity = '0';
                     setTimeout(() => splash.classList.add('hidden'), 500);
                 }
-            }, 3000); // Wait 3 seconds to show full custom splash
+            }, 3500); // 3.5 seconds full screen splash
         }
 
         // --- 1. FIREBASE SETUP & AUTH LOGIC ---
@@ -409,20 +409,18 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Listen for Auth State changes
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-layout').classList.remove('hidden');
                 document.getElementById('app-layout').classList.add('flex');
                 
-                // Set User Name/Avatar
                 const displayName = user.displayName || user.email.split('@')[0];
                 document.getElementById('user-name-desk').innerText = displayName;
                 document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
                 
-                initAppSystem(); // Load game stats & Ads
-                renderLeaderboard(); // Load Leaderboard
+                initAppSystem(); 
+                renderLeaderboard(); 
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('app-layout').classList.add('hidden');
@@ -516,7 +514,7 @@
             auth.signOut().then(() => showToast("Logged out", true));
         }
 
-        // --- 1.5 LIVE LEADERBOARD (FIRESTORE) ---
+        // --- 1.5 LIVE REAL LEADERBOARD (FIRESTORE) ---
         async function renderLeaderboard() {
             let container = document.getElementById('lb-container');
             container.innerHTML = '<p class="text-center text-slate-400 text-sm py-4"><span class="loader"></span> Loading Live Data...</p>';
@@ -526,7 +524,7 @@
                 let html = '<div class="space-y-3">';
                 
                 if(snapshot.empty) {
-                    html += '<p class="text-center text-slate-400 text-xs">No active users yet. Play games to rank up!</p>';
+                    html += '<p class="text-center text-slate-400 text-xs">No active users yet. Be the first to play!</p>';
                 } else {
                     let rank = 1;
                     snapshot.forEach(doc => {
@@ -571,22 +569,27 @@
         
         let pendingRewardType = '';
 
-        // UPDATED ADMOB LOGIC WITH DIRECT PLUGINS ACCESS
+        // --- BULLETPROOF ADMOB LOGIC (DIRECT CAPACITOR PLUGIN) ---
         async function initAdMob() {
             try {
                 if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
-                    console.log("Not native platform. Ads won't show in browser.");
+                    console.log("Browser Mode: Ads bypassed.");
                     return;
                 }
+
+                // Safely wait a moment for the native bridge to inject plugins
+                await new Promise(r => setTimeout(r, 1000));
                 
-                const AdMob = window.Capacitor.Plugins.AdMob;
+                const AdMob = window.Capacitor?.Plugins?.AdMob;
                 if (!AdMob) {
-                    showToast("AdMob Plugin not found.", false);
+                    console.log("AdMob native bridge not found. Sync via Github Action.");
                     return;
                 }
                 
+                // Initialize AdMob
                 await AdMob.initialize();
                 
+                // Preload all ads
                 setTimeout(async () => {
                     try {
                         await AdMob.showBanner({ 
@@ -608,10 +611,11 @@
                         });
                         
                     } catch(err) {
-                        console.log("Ad Load Error: ", err);
+                        console.error("Ad Load Error: ", err);
                     }
-                }, 2000);
+                }, 1500);
 
+                // Listen for Reward event
                 AdMob.addListener('onRewardedVideoAdReward', () => {
                     if (pendingRewardType === 'coins') {
                         userCoins += 50;
@@ -631,11 +635,10 @@
                     localStorage.setItem('ep_coins', userCoins);
                     refreshDashboardUI();
                     
-                    // Prep next ad
                     AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
                 });
             } catch (e) { 
-                console.log("Critical AdMob Error: ", e.message);
+                console.error("Critical AdMob Error: ", e);
             }
         }
 
@@ -749,6 +752,7 @@
             localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
             localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
 
+            // Sync to Live Firestore
             if(auth.currentUser) {
                 db.collection('users').doc(auth.currentUser.uid).set({
                     name: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
