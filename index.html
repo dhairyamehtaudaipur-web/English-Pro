@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>EnglishPro AI | Premium Grammar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -34,30 +34,16 @@
         /* Loading Spinner */
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* PERFECT FULL SCREEN SPLASH - NO CUTS */
-        #custom-splash { 
-            position: fixed; inset: 0; z-index: 99999;
-            background-color: #090A0F;
-            background-image: url('assets/splash.png'); /* Apni image yahan match karein .png ya .jpg */
-            background-size: 100% 100%; /* Stretches to fill entire screen without cutting */
-            background-position: center;
-            background-repeat: no-repeat;
-            transition: opacity 0.6s ease-out; 
-        }
         
         /* Network Issue Overlay */
         #network-error {
             position: fixed; inset: 0; z-index: 99998;
-            background-color: rgba(9, 10, 15, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-color: #090A0F;
+            display: flex; flex-direction: column; items-center; justify-content: center;
         }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]">
-
-    <div id="custom-splash"></div>
+<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="checkNetwork()">
 
     <div id="network-error" class="hidden flex-col items-center justify-center text-center p-6">
         <div class="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 text-4xl mb-6 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
@@ -84,7 +70,7 @@
 
             <div id="form-login" class="block space-y-4">
                 <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
-
+                
                 <input type="email" id="log-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition mt-2">
                 
                 <div class="relative">
@@ -397,33 +383,33 @@
             </button>
         </nav>
     </div> <script>
-        // --- 0. STRICT ONLINE NETWORK CHECKER ---
+        // --- 0. STRICT ONLINE NETWORK CHECKER (REWRITTEN) ---
         function checkNetwork() {
             const netError = document.getElementById('network-error');
             const authSec = document.getElementById('auth-section');
             const appLayout = document.getElementById('app-layout');
-            const splash = document.getElementById('custom-splash');
             
             if (!navigator.onLine) {
-                // Offline
+                // Connection genuinely lost
                 netError.classList.remove('hidden');
                 netError.classList.add('flex');
                 authSec.classList.add('hidden');
                 appLayout.classList.add('hidden');
                 appLayout.classList.remove('flex');
-                if(splash) splash.classList.add('hidden');
             } else {
-                // Online
+                // Everything is safe and online
                 netError.classList.add('hidden');
                 netError.classList.remove('flex');
                 
-                if(auth.currentUser) {
+                // Switch dynamically based on Firebase Auth state
+                if (firebase.auth().currentUser) {
                     appLayout.classList.remove('hidden');
                     appLayout.classList.add('flex');
+                    authSec.classList.add('hidden');
                 } else {
-                    if(splash && splash.classList.contains('hidden')) {
-                        authSec.classList.remove('hidden');
-                    }
+                    authSec.classList.remove('hidden');
+                    appLayout.classList.add('hidden');
+                    appLayout.classList.remove('flex');
                 }
             }
         }
@@ -449,34 +435,28 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Listen for Auth State changes
+        // Listen for Auth State changes - INSTANT RESPONSE REMOVED FIXED TIMER
         auth.onAuthStateChanged(user => {
-            const splash = document.getElementById('custom-splash');
-            if(splash && !splash.classList.contains('hidden')) {
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.classList.add('hidden');
-                    checkNetwork(); 
-                }, 600);
-            }
-
-            if (!navigator.onLine) return; 
-
-            if (user) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('app-layout').classList.remove('hidden');
-                document.getElementById('app-layout').classList.add('flex');
-                
-                const displayName = user.displayName || user.email.split('@')[0];
-                document.getElementById('user-name-desk').innerText = displayName;
-                document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
-                
-                initAppSystem(); 
-                renderLeaderboard(); 
+            // Instantly trigger view rendering once firebase initializes state
+            if (navigator.onLine) {
+                if (user) {
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('app-layout').classList.remove('hidden');
+                    document.getElementById('app-layout').classList.add('flex');
+                    
+                    const displayName = user.displayName || user.email.split('@')[0];
+                    document.getElementById('user-name-desk').innerText = displayName;
+                    document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
+                    
+                    initAppSystem(); 
+                    renderLeaderboard(); 
+                } else {
+                    document.getElementById('auth-section').classList.remove('hidden');
+                    document.getElementById('app-layout').classList.add('hidden');
+                    document.getElementById('app-layout').classList.remove('flex');
+                }
             } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('app-layout').classList.add('hidden');
-                document.getElementById('app-layout').classList.remove('flex');
+                checkNetwork();
             }
         });
 
@@ -629,17 +609,16 @@
         
         let pendingRewardType = '';
 
-        // --- BUG-FREE ADMOB LOGIC (NATIVE CALL ONLY) ---
+        // --- BUG-FREE ADMOB LOGIC (NATIVE CALL REFIXED) ---
         async function initAdMob() {
             try {
-                if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) {
-                    console.log("No native AdMob plugin found. Bypassing ads.");
+                // Direct plugin execution bypasses variable bugs on older systems
+                const AdMob = window.Capacitor?.Plugins?.AdMob;
+                if (!AdMob) {
+                    console.log("AdMob bridge offline.");
                     return;
                 }
                 
-                const AdMob = window.Capacitor.Plugins.AdMob;
-                
-                // Initialize AdMob
                 await AdMob.initialize();
                 
                 setTimeout(async () => {
@@ -663,7 +642,7 @@
                         });
                         
                     } catch(err) {
-                        console.error("Ad Load Error: ", err);
+                        console.error("Ad Load Failure: ", err);
                     }
                 }, 1500);
 
@@ -689,7 +668,7 @@
                     AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
                 });
             } catch (e) { 
-                console.error("Critical AdMob Error: ", e);
+                console.error("Critical AdMob Setup Error: ", e);
             }
         }
 
@@ -1807,7 +1786,6 @@
             }
         }
 
-        // === SHOW GREEN CORRECT ANSWER ALERT ===
         function showArenaAlert(isCorrect, text, correctAns = null) {
             const alertBox = document.getElementById('arena-alert');
             if (isCorrect) {
@@ -1937,4 +1915,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
