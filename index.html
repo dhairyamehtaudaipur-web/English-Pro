@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EnglishPro AI | Premium Grammar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -39,7 +39,7 @@
         #network-error {
             position: fixed; inset: 0; z-index: 99998;
             background-color: #090A0F;
-            display: flex; flex-direction: column; items-center; justify-content: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
     </style>
 </head>
@@ -70,7 +70,7 @@
 
             <div id="form-login" class="block space-y-4">
                 <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
-                
+
                 <input type="email" id="log-email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition mt-2">
                 
                 <div class="relative">
@@ -193,7 +193,7 @@
                             <span id="dash-streak" class="text-lg font-bold text-amber-400 whitespace-nowrap block">0 🔥</span>
                         </div>
                         <div class="bg-slate-950/60 p-3 rounded-2xl text-center border border-slate-800/60">
-                            <span class="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider">Coins</span>
+                            <span class="text-[10px] text-yellow-400 block mb-1 uppercase tracking-wider">Coins</span>
                             <span id="dash-coins" class="text-lg font-bold text-yellow-400 whitespace-nowrap block">0 🪙</span>
                         </div>
                     </div>
@@ -282,7 +282,7 @@
                     </div>
 
                     <div class="mt-3 flex gap-2 pt-2 bg-slate-950/20">
-                        <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
                         <button onclick="triggerChatAction()" class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center font-bold text-black active:scale-95 transition flex-shrink-0">
                             <i class="fa-solid fa-paper-plane text-sm"></i>
                         </button>
@@ -383,25 +383,22 @@
             </button>
         </nav>
     </div> <script>
-        // --- 0. STRICT ONLINE NETWORK CHECKER (REWRITTEN) ---
+        // --- 0. STRICT ONLINE NETWORK CHECKER ---
         function checkNetwork() {
             const netError = document.getElementById('network-error');
             const authSec = document.getElementById('auth-section');
             const appLayout = document.getElementById('app-layout');
             
             if (!navigator.onLine) {
-                // Connection genuinely lost
                 netError.classList.remove('hidden');
                 netError.classList.add('flex');
                 authSec.classList.add('hidden');
                 appLayout.classList.add('hidden');
                 appLayout.classList.remove('flex');
             } else {
-                // Everything is safe and online
                 netError.classList.add('hidden');
                 netError.classList.remove('flex');
                 
-                // Switch dynamically based on Firebase Auth state
                 if (firebase.auth().currentUser) {
                     appLayout.classList.remove('hidden');
                     appLayout.classList.add('flex');
@@ -435,28 +432,28 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Listen for Auth State changes - INSTANT RESPONSE REMOVED FIXED TIMER
+        // Listen for Auth State changes
         auth.onAuthStateChanged(user => {
-            // Instantly trigger view rendering once firebase initializes state
-            if (navigator.onLine) {
-                if (user) {
-                    document.getElementById('auth-section').classList.add('hidden');
-                    document.getElementById('app-layout').classList.remove('hidden');
-                    document.getElementById('app-layout').classList.add('flex');
-                    
-                    const displayName = user.displayName || user.email.split('@')[0];
-                    document.getElementById('user-name-desk').innerText = displayName;
-                    document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
-                    
-                    initAppSystem(); 
-                    renderLeaderboard(); 
-                } else {
-                    document.getElementById('auth-section').classList.remove('hidden');
-                    document.getElementById('app-layout').classList.add('hidden');
-                    document.getElementById('app-layout').classList.remove('flex');
-                }
-            } else {
+            if (!navigator.onLine) {
                 checkNetwork();
+                return;
+            }
+
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('flex');
+                
+                const displayName = user.displayName || user.email.split('@')[0];
+                document.getElementById('user-name-desk').innerText = displayName;
+                document.getElementById('user-avatar-desk').innerText = displayName.charAt(0).toUpperCase();
+                
+                initAppSystem(); 
+                renderLeaderboard(); 
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('app-layout').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('flex');
             }
         });
 
@@ -609,16 +606,16 @@
         
         let pendingRewardType = '';
 
-        // --- BUG-FREE ADMOB LOGIC (NATIVE CALL REFIXED) ---
+        // --- BUG-FREE NATIVE ADMOB STABLE LOADING ---
         async function initAdMob() {
             try {
-                // Direct plugin execution bypasses variable bugs on older systems
-                const AdMob = window.Capacitor?.Plugins?.AdMob;
-                if (!AdMob) {
-                    console.log("AdMob bridge offline.");
+                // Auto-retry helper if native bridge initialization is delayed slightly by the device OS
+                if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) {
+                    setTimeout(initAdMob, 1000);
                     return;
                 }
                 
+                const AdMob = window.Capacitor.Plugins.AdMob;
                 await AdMob.initialize();
                 
                 setTimeout(async () => {
@@ -642,9 +639,9 @@
                         });
                         
                     } catch(err) {
-                        console.error("Ad Load Failure: ", err);
+                        console.error("Ad Engine Internal load delay:", err);
                     }
-                }, 1500);
+                }, 1000);
 
                 AdMob.addListener('onRewardedVideoAdReward', () => {
                     if (pendingRewardType === 'coins') {
@@ -668,7 +665,7 @@
                     AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
                 });
             } catch (e) { 
-                console.error("Critical AdMob Setup Error: ", e);
+                console.error("AdMob Context Sync Exception: ", e);
             }
         }
 
@@ -685,13 +682,13 @@
             pendingRewardType = rewardType;
             const AdMob = window.Capacitor?.Plugins?.AdMob;
             if (!AdMob) {
-                showToast("Ads work in mobile app only!", false);
+                showToast("Ad placement is caching... Please try again in a moment.", false);
                 return;
             }
             try { 
                 await AdMob.showRewardVideoAd(); 
             } catch(e) { 
-                showToast("Ad loading, please try again.", false); 
+                showToast("Ad request timed out, reloading entry.", false); 
             }
         }
 
@@ -869,8 +866,8 @@
             "future continuous": "<strong>Future Continuous Tense:</strong> Describes an unfinished action that will be in progress at a time later than now.<br><br><em>Rule:</em> Subject + will/shall + be + V1+ing + Object.<br><em>Example:</em> I will be attending the conference next week.",
             "future perfect": "<strong>Future Perfect Tense:</strong> Used to describe an event that is expected or planned to happen before a time of reference in the future.<br><br><em>Rule:</em> Subject + will/shall + have + V3 + Object.<br><em>Example:</em> She will have graduated by next summer.",
             "future perfect continuous": "<strong>Future Perfect Continuous Tense:</strong> Used to project ourselves forward in time and look back. It refers to events or actions that are currently unfinished but will be finished at some future time.<br><br><em>Rule:</em> Subject + will/shall + have + been + V1+ing + since/for.<br><em>Example:</em> By next month, I will have been living here for ten years.",
-            "active passive": "<strong>Voice (Active and Passive):</strong><br><br>1. <u>Active Voice:</u> The subject performs the action stated by the verb. <br><em>Example:</em> Shakespeare wrote the play.<br>2. <u>Passive Voice:</u> The subject is acted upon by the verb.<br><em>Example:</em> The play was written by Shakespeare.<br><em>General Rule for Conversion:</em> Object + Auxiliary Verb + V3 (Past Participle) + by + Subject.",
-            "direct indirect": "<strong>Speech (Direct and Indirect):</strong><br><br>1. <u>Direct Speech:</u> Quoting the exact words spoken by a person, enclosed in quotation marks. <br><em>Example:</em> He said, \"I am reading a book.\"<br>2. <u>Indirect (Reported) Speech:</u> Expressing the content of statements without quoting them explicitly. Changes in tense and pronouns usually occur.<br><em>Example:</em> He said that he was reading a book.",
+            "active passive": "<strong>Voice (Active and Passive):</strong><br><br>1. <u>Active Voice:</u> The subject performs the action stated by the verb. <br><em>Example: Shakespeare wrote the play.</em><br>2. <u>Passive Voice:</u> The subject is acted upon by the verb.<br><em>Example: The play was written by Shakespeare.</em><br><em>General Rule for Conversion:</em> Object + Auxiliary Verb + V3 (Past Participle) + by + Subject.",
+            "direct indirect": "<strong>Speech (Direct and Indirect):</strong><br><br>1. <u>Direct Speech:</u> Quoting the exact words spoken by a person, enclosed in quotation marks. <br><em>Example: He said, \"I am reading a book.\"</em><br>2. <u>Indirect (Reported) Speech:</u> Expressing the content of statements without quoting them explicitly. Changes in tense and pronouns usually occur.<br><em>Example: He said that he was reading a book.</em><br><em>General Rule for Conversion:</em> Convert tenses sequentially backwards.",
             "hello": "Hello! How may I assist you with your English Grammar studies today? You can inquire about any specific topic such as Nouns, Verbs, or Tenses."
         };
 
@@ -1457,7 +1454,7 @@
                                     let match = true; let tempPath = [];
                                     for(let k=0; k<unfound.length; k++) {
                                         let nr = r + d[0]*k; let nc = c + d[1]*k;
-                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== unfound[k]) { match = false; break; }
+                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr+d[0]*k][nc+d[1]*k] !== unfound[k]) { match = false; break; }
                                         tempPath.push({r: nr, c: nc});
                                     }
                                     if(match) { foundPath = tempPath; break; }
@@ -1634,7 +1631,7 @@
                 html += `<div class="grid grid-cols-10 gap-1 bg-slate-900 p-2 rounded-xl border border-slate-800 relative mx-auto" id="ws-grid">`;
                 html += `<div id="ws-selection-line" style="opacity:0"></div>`;
                 for(let r=0; r<10; r++) {
-                    for(let c=0; c<10; c++) {
+                    for(let c=0; c<10; j++) {
                         html += `<div id="ws-${r}-${c}" data-r="${r}" data-c="${c}" class="ws-cell bg-slate-800 text-slate-200 touch-none select-none">${wsGrid[r][c]}</div>`;
                     }
                 }
