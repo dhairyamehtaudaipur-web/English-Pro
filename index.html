@@ -34,25 +34,9 @@
         /* Loading Spinner */
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Network Issue Overlay */
-        #network-error {
-            position: fixed; inset: 0; z-index: 99998;
-            background-color: #090A0F;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="checkNetwork()">
-
-    <div id="network-error" class="hidden flex-col items-center justify-center text-center p-6">
-        <div class="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 text-4xl mb-6 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
-            <i class="fa-solid fa-wifi"></i>
-        </div>
-        <h2 class="text-2xl font-bold mb-2 text-white">Connection Lost</h2>
-        <p class="text-sm text-slate-400 max-w-xs mx-auto">EnglishPro requires an active internet connection to sync your progress and load games. Please check your network.</p>
-        <button onclick="checkNetwork()" class="mt-8 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-black active:scale-95 transition">Try Again</button>
-    </div>
+<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]">
 
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
@@ -85,7 +69,7 @@
                     <button onclick="switchAuthView('forgot')" class="hover:text-cyan-400 transition font-medium">Forgot Password?</button>
                 </div>
 
-                <button id="btn-login" onclick="handleLogin()" class="w-full py-3.5 mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-sm text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition flex items-center justify-center gap-2">
+                <button id="btn-login" onclick="handleLogin()" class="w-full py-3.5 mt-2 bg-gradient-to-r from-cyan-500 whites-sm text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition flex items-center justify-center gap-2">
                     <span>Login</span>
                 </button>
 
@@ -383,37 +367,6 @@
             </button>
         </nav>
     </div> <script>
-        // --- 0. STRICT ONLINE NETWORK CHECKER ---
-        function checkNetwork() {
-            const netError = document.getElementById('network-error');
-            const authSec = document.getElementById('auth-section');
-            const appLayout = document.getElementById('app-layout');
-            
-            if (!navigator.onLine) {
-                netError.classList.remove('hidden');
-                netError.classList.add('flex');
-                authSec.classList.add('hidden');
-                appLayout.classList.add('hidden');
-                appLayout.classList.remove('flex');
-            } else {
-                netError.classList.add('hidden');
-                netError.classList.remove('flex');
-                
-                if (firebase.auth().currentUser) {
-                    appLayout.classList.remove('hidden');
-                    appLayout.classList.add('flex');
-                    authSec.classList.add('hidden');
-                } else {
-                    authSec.classList.remove('hidden');
-                    appLayout.classList.add('hidden');
-                    appLayout.classList.remove('flex');
-                }
-            }
-        }
-        
-        window.addEventListener('online', checkNetwork);
-        window.addEventListener('offline', checkNetwork);
-
         // --- 1. FIREBASE SETUP & AUTH LOGIC ---
         const firebaseConfig = {
             apiKey: "AIzaSyAFr6ZULfTrqqn1lOBnk7woMhdwtdT9-cU",
@@ -432,13 +385,8 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Listen for Auth State changes
+        // Listen for Auth State changes - Direct layout loading
         auth.onAuthStateChanged(user => {
-            if (!navigator.onLine) {
-                checkNetwork();
-                return;
-            }
-
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-layout').classList.remove('hidden');
@@ -487,7 +435,6 @@
         }
 
         async function handleLogin() {
-            if (!navigator.onLine) return showToast("No internet connection", false);
             const email = document.getElementById('log-email').value.trim();
             const pwd = document.getElementById('log-pwd').value;
             const remember = document.getElementById('log-remember').checked;
@@ -507,7 +454,6 @@
         }
 
         async function handleSignup() {
-            if (!navigator.onLine) return showToast("No internet connection", false);
             const name = document.getElementById('sign-name').value.trim();
             const email = document.getElementById('sign-email').value.trim();
             const pwd = document.getElementById('sign-pwd').value;
@@ -527,7 +473,6 @@
         }
 
         async function handleForgot() {
-            if (!navigator.onLine) return showToast("No internet connection", false);
             const email = document.getElementById('for-email').value.trim();
             if(!email) return showToast("Enter registered email", false);
 
@@ -550,11 +495,6 @@
         async function renderLeaderboard() {
             let container = document.getElementById('lb-container');
             container.innerHTML = '<p class="text-center text-slate-400 text-sm py-4"><span class="loader"></span> Loading Live Data...</p>';
-            
-            if (!navigator.onLine) {
-                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Cannot load leaderboard offline.</p>';
-                return;
-            }
 
             try {
                 const snapshot = await db.collection('users').orderBy('xp', 'desc').limit(15).get();
@@ -606,10 +546,9 @@
         
         let pendingRewardType = '';
 
-        // --- BUG-FREE NATIVE ADMOB STABLE LOADING ---
+        // --- BUG-FREE NATIVE ADMOB LOGIC (NATIVE CALL REFIXED) ---
         async function initAdMob() {
             try {
-                // Auto-retry helper if native bridge initialization is delayed slightly by the device OS
                 if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) {
                     setTimeout(initAdMob, 1000);
                     return;
@@ -639,9 +578,9 @@
                         });
                         
                     } catch(err) {
-                        console.error("Ad Engine Internal load delay:", err);
+                        console.error("Ad Load Failure: ", err);
                     }
-                }, 1000);
+                }, 1500);
 
                 AdMob.addListener('onRewardedVideoAdReward', () => {
                     if (pendingRewardType === 'coins') {
@@ -665,7 +604,7 @@
                     AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
                 });
             } catch (e) { 
-                console.error("AdMob Context Sync Exception: ", e);
+                console.error("Critical AdMob Setup Error: ", e);
             }
         }
 
@@ -682,13 +621,13 @@
             pendingRewardType = rewardType;
             const AdMob = window.Capacitor?.Plugins?.AdMob;
             if (!AdMob) {
-                showToast("Ad placement is caching... Please try again in a moment.", false);
+                showToast("Ads work in mobile app only!", false);
                 return;
             }
             try { 
                 await AdMob.showRewardVideoAd(); 
             } catch(e) { 
-                showToast("Ad request timed out, reloading entry.", false); 
+                showToast("Ad loading, please try again.", false); 
             }
         }
 
@@ -779,7 +718,7 @@
             localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
             localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
 
-            if(auth.currentUser && navigator.onLine) {
+            if(auth.currentUser) {
                 db.collection('users').doc(auth.currentUser.uid).set({
                     name: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
                     xp: xpPoints
@@ -871,35 +810,6 @@
             "hello": "Hello! How may I assist you with your English Grammar studies today? You can inquire about any specific topic such as Nouns, Verbs, or Tenses."
         };
 
-        function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
-        function triggerChatAction() {
-            if (!navigator.onLine) {
-                checkNetwork();
-                return;
-            }
-            const chatBox = document.getElementById('chat-input');
-            let msg = chatBox.value.trim().toLowerCase();
-            if(!msg) return;
-            const stream = document.getElementById('chat-stream');
-            stream.innerHTML += `<div class="flex gap-2.5 flex-row-reverse items-start"><div class="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center font-bold text-black flex-shrink-0">S</div><div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-slate-100 shadow-md">${chatBox.value}</div></div>`;
-            chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
-
-            setTimeout(() => {
-                let answer = "I apologize, but my knowledge is currently restricted to English Grammar. Please inquire about topics such as: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', or 'Active Passive'.";
-                let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
-                for(let key of keys) { 
-                    if(msg.includes(key)) { 
-                        answer = aiKnowledge[key]; 
-                        break; 
-                    } 
-                }
-                stream.innerHTML += `<div class="flex gap-2.5 items-start"><div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div><div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 text-xs">${answer}</div></div>`;
-                stream.scrollTop = stream.scrollHeight;
-            }, 600);
-        }
-        function clearChat() { document.getElementById('chat-stream').innerHTML = ''; }
-
-
         const fullMCQData = [
             {q: "Neither Rahul nor his friends ____ present.", o: ["is", "are", "has", "have been"], c: 1},
             {q: "If I ____ a billionaire, I would travel the world.", o: ["am", "was", "were", "had been"], c: 2},
@@ -920,7 +830,7 @@
             {q: "The police ___ caught the thief.", o: ["has", "have", "is", "are"], c: 1},
             {q: "The news ___ true.", o: ["is", "are", "has", "have"], c: 0},
             {q: "Physics ___ a difficult subject.", o: ["is", "are", "has", "have"], c: 0},
-            {q: "One of my friends ___ going to America.", o: ["is", "are", "has", "have"], c: 0},
+            {q: "One of my friends ___ going to America.", o: ["is", "are", "has", "have"], block: true, c: 0},
             {q: "Each of the boys ___ given a prize.", o: ["was", "were", "has", "have"], c: 0},
             {q: "The quality of the apples ___ not good.", o: ["was", "were", "has", "have"], c: 0},
             {q: "A lot of money ___ wasted.", o: ["was", "were", "has", "have"], c: 0},
@@ -1410,10 +1320,6 @@
         let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
 
         function useHint() {
-            if (!navigator.onLine) {
-                checkNetwork();
-                return;
-            }
             if(remainingHints <= 0) return;
 
             let hintUsed = false;
@@ -1454,7 +1360,7 @@
                                     let match = true; let tempPath = [];
                                     for(let k=0; k<unfound.length; k++) {
                                         let nr = r + d[0]*k; let nc = c + d[1]*k;
-                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr+d[0]*k][nc+d[1]*k] !== unfound[k]) { match = false; break; }
+                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== unfound[k]) { match = false; break; }
                                         tempPath.push({r: nr, c: nc});
                                     }
                                     if(match) { foundPath = tempPath; break; }
@@ -1489,10 +1395,6 @@
         }
 
         function initGame(mode) {
-            if (!navigator.onLine) {
-                checkNetwork();
-                return;
-            }
             currentGameMode = mode;
             document.getElementById('games-menu').classList.add('hidden');
             document.getElementById('game-arena').classList.remove('hidden');
@@ -1631,7 +1533,7 @@
                 html += `<div class="grid grid-cols-10 gap-1 bg-slate-900 p-2 rounded-xl border border-slate-800 relative mx-auto" id="ws-grid">`;
                 html += `<div id="ws-selection-line" style="opacity:0"></div>`;
                 for(let r=0; r<10; r++) {
-                    for(let c=0; c<10; j++) {
+                    for(let c=0; c<10; c++) {
                         html += `<div id="ws-${r}-${c}" data-r="${r}" data-c="${c}" class="ws-cell bg-slate-800 text-slate-200 touch-none select-none">${wsGrid[r][c]}</div>`;
                     }
                 }
@@ -1724,7 +1626,7 @@
                 
                 let optsHtml = `<div class="w-full max-w-sm flex flex-col gap-3 mx-auto">`;
                 pool.sort(()=>0.5-Math.random()).forEach((v) => {
-                    optsHtml += `<button onclick="checkMatch(this, '${v}')" class="w-full p-3.5 bg-slate-900/90 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-sm font-medium text-center transition active:scale-95 opt-btn">${v}</button>`;
+                    optsHtml += `<button onclick="checkMatch(this, '${v}')" class="w-full p-3.5 bg-slate-900/90 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-sm font-medium text-center transition active:scale-95 opt-btn">${v}') font-medium">${v}</button>`;
                 });
                 optsHtml += `</div>`;
                 optArea.innerHTML = optsHtml;
