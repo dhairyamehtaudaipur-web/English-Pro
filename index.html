@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EnglishPro AI | Premium Grammar</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -49,15 +52,19 @@
 </head>
 <body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="initApp()">
 
+    <!-- CUSTOM FULL SCREEN SPLASH -->
     <div id="custom-splash"></div>
 
+    <!-- Toast Notification -->
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
         Message
     </div>
 
+    <!-- BACKGROUND GLOWS -->
     <div class="fixed -top-20 -left-20 w-72 h-72 bg-cyan-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
     <div class="fixed bottom-10 right-0 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none z-0"></div>
 
+    <!-- ==================== AUTHENTICATION SECTION ==================== -->
     <section id="auth-section" class="min-h-screen flex flex-col items-center justify-center p-4 relative z-50 hidden">
         <div class="w-full max-w-sm glass-morphic p-8 rounded-3xl neon-border relative overflow-hidden text-center">
             
@@ -65,6 +72,7 @@
                 <i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>EnglishPro
             </h1>
 
+            <!-- LOGIN FORM -->
             <div id="form-login" class="block space-y-4">
                 <h2 class="text-xl font-bold mb-4">Welcome Back! 👋</h2>
 
@@ -89,6 +97,7 @@
                 <p class="text-xs text-slate-400 mt-4">New here? <button onclick="switchAuthView('signup')" class="text-cyan-400 font-bold hover:underline">Create an account</button></p>
             </div>
 
+            <!-- SIGNUP FORM -->
             <div id="form-signup" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-4">Join EnglishPro 🚀</h2>
 
@@ -107,6 +116,7 @@
                 <p class="text-xs text-slate-400 mt-4">Already have an account? <button onclick="switchAuthView('login')" class="text-purple-400 font-bold hover:underline">Login here</button></p>
             </div>
 
+            <!-- FORGOT PASSWORD FORM -->
             <div id="form-forgot" class="hidden space-y-4">
                 <h2 class="text-xl font-bold mb-2">Reset Password 🔒</h2>
                 <p class="text-xs text-slate-400 mb-4">Enter your email to receive a reset link.</p>
@@ -123,8 +133,10 @@
         </div>
     </section>
 
+    <!-- ==================== MAIN APP LAYOUT (Hidden until logged in) ==================== -->
     <div id="app-layout" class="hidden w-full min-h-screen flex-col md:flex-row pb-20 md:pb-0 relative z-10">
         
+        <!-- DESKTOP SIDEBAR -->
         <aside class="w-64 glass-morphic hidden md:flex flex-col justify-between p-6 border-r border-slate-800 shrink-0">
             <div>
                 <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-10">
@@ -154,6 +166,7 @@
             </div>
         </aside>
 
+        <!-- MOBILE TOP BAR -->
         <header class="md:hidden w-full glass-morphic px-5 py-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-900 shrink-0">
             <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
                 <i class="fa-solid fa-bolt text-cyan-400 mr-1"></i>EnglishPro
@@ -164,8 +177,10 @@
             </div>
         </header>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 p-4 md:p-8 relative max-w-md mx-auto w-full md:max-w-none overflow-y-auto">
             
+            <!-- TAB 1: DASHBOARD -->
             <section id="dashboard" class="tab-content block space-y-6">
                 <div class="bg-gradient-to-r from-purple-900/40 via-slate-900/80 to-cyan-900/40 p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
                     
@@ -195,6 +210,7 @@
                         </div>
                     </div>
                     
+                    <!-- Watch Ad for Coins Button -->
                     <div class="mt-4 text-center border-t border-slate-800/60 pt-4 flex items-center justify-between">
                         <p class="text-[10px] text-slate-400 font-medium">Available Hints: <span id="dash-hints" class="text-amber-400 font-bold">3 💡</span></p>
                         <button onclick="watchAdForCoins()" class="bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] font-bold active:scale-95 transition uppercase tracking-wide">
@@ -238,6 +254,7 @@
                 </div>
             </section>
 
+            <!-- TAB: STATIC LEARNING CONTENT -->
             <section id="learning-section" class="tab-content hidden relative">
                 <div class="flex justify-between items-center mb-6">
                     <button onclick="closeLearning()" class="text-xs bg-slate-800 px-4 py-2.5 rounded-xl hover:bg-slate-700 transition flex items-center gap-1.5 shrink-0">
@@ -252,6 +269,7 @@
                 </div>
             </section>
 
+            <!-- TAB: LEADERBOARD -->
             <section id="leaderboard" class="tab-content hidden relative">
                 <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-trophy text-amber-400"></i> Top Learners</h2>
                 <div class="glass-morphic p-4 rounded-3xl border border-slate-800" id="lb-container">
@@ -259,6 +277,7 @@
                 </div>
             </section>
 
+            <!-- TAB 2: AI TUTOR -->
             <section id="ai-tutor" class="tab-content hidden flex flex-col h-[65vh] md:h-[78vh] relative">
                 <div class="flex justify-between items-center mb-3">
                     <div>
@@ -287,6 +306,7 @@
                 </div>
             </section>
 
+            <!-- TAB 3: GAMES ARCADE -->
             <section id="games" class="tab-content hidden relative">
                 <div id="games-menu">
                     <h2 class="text-2xl font-bold mb-4">Games Arcade 🕹️</h2>
@@ -326,6 +346,7 @@
                     </div>
                 </div>
 
+                <!-- Game Playing Arena -->
                 <div id="game-arena" class="hidden">
                     <div class="flex justify-between items-center mb-4">
                         <button onclick="quitGame()" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition"><i class="fa-solid fa-arrow-left"></i> Back</button>
@@ -362,9 +383,11 @@
                 </div>
             </section>
             
+            <!-- BANNER AD SPACE TO PREVENT UI OVERLAP -->
             <div class="h-24 w-full shrink-0 block md:hidden"></div>
         </main>
 
+        <!-- MOBILE BOTTOM NAVIGATION -->
         <nav class="md:hidden fixed bottom-0 left-0 w-full glass-morphic border-t border-slate-900 grid grid-cols-4 py-2.5 z-50 px-2 shrink-0">
             <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center gap-1 text-slate-500" id="mob-dashboard">
                 <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[10px] font-medium">Home</span>
@@ -379,18 +402,10 @@
                 <i class="fa-solid fa-trophy text-lg"></i><span class="text-[10px] font-medium">Rank</span>
             </button>
         </nav>
-    </div> <script>
-        // --- 0. CUSTOM SPLASH SCREEN LOGIC ---
-        function initApp() {
-            setTimeout(() => {
-                const splash = document.getElementById('custom-splash');
-                if(splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => splash.classList.add('hidden'), 500);
-                }
-            }, 3500); // 3.5 seconds full screen splash
-        }
+    </div> <!-- END MAIN APP LAYOUT -->
 
+    <!-- ==================== SYSTEM SCRIPT ==================== -->
+    <script>
         // --- 1. FIREBASE SETUP & AUTH LOGIC ---
         const firebaseConfig = {
             apiKey: "AIzaSyAFr6ZULfTrqqn1lOBnk7woMhdwtdT9-cU",
@@ -409,6 +424,7 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Listen for Auth State changes - Direct layout loading
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
@@ -518,7 +534,7 @@
         async function renderLeaderboard() {
             let container = document.getElementById('lb-container');
             container.innerHTML = '<p class="text-center text-slate-400 text-sm py-4"><span class="loader"></span> Loading Live Data...</p>';
-            
+
             try {
                 const snapshot = await db.collection('users').orderBy('xp', 'desc').limit(15).get();
                 let html = '<div class="space-y-3">';
@@ -558,7 +574,7 @@
                 html += '</div>';
                 container.innerHTML = html;
             } catch(e) {
-                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Failed to load leaderboard. Set Firebase Rules.</p>';
+                container.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Failed to load leaderboard.</p>';
             }
         }
 
@@ -572,7 +588,6 @@
         // --- BUG-FREE NATIVE ADMOB STABLE LOADING ---
         async function initAdMob() {
             try {
-                // Auto-retry helper if native bridge initialization is delayed slightly by the device OS
                 if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) {
                     setTimeout(initAdMob, 1000);
                     return;
@@ -584,21 +599,21 @@
                 setTimeout(async () => {
                     try {
                         await AdMob.showBanner({ 
-                            adId: 'ca-app-pub-9418296168496664/9353961049', 
+                            adId: 'ca-app-pub-3940256099942544/6300978111', 
                             adSize: 'BANNER', 
                             position: 'BOTTOM_CENTER', 
                             margin: 80, 
-                            isTesting: false 
+                            isTesting: true 
                         });
                         
                         await AdMob.prepareInterstitial({ 
-                            adId: 'ca-app-pub-9418296168496664/9299640637',
-                            isTesting: false 
+                            adId: 'ca-app-pub-3940256099942544/1033173712', 
+                            isTesting: true 
                         });
                         
                         await AdMob.prepareRewardVideoAd({ 
-                            adId: 'ca-app-pub-9418296168496664/8266064487',
-                            isTesting: false 
+                            adId: 'ca-app-pub-3940256099942544/5224354917', 
+                            isTesting: true 
                         });
                         
                     } catch(err) {
@@ -625,7 +640,7 @@
                     localStorage.setItem('ep_coins', userCoins);
                     refreshDashboardUI();
                     
-                    AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-9418296168496664/8266064487', isTesting: false });
+                    AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-3940256099942544/5224354917', isTesting: true });
                 });
             } catch (e) { 
                 console.error("AdMob Context Sync Exception: ", e);
@@ -637,7 +652,7 @@
             if (!AdMob) return;
             try {
                 await AdMob.showInterstitial();
-                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-9418296168496664/9299640637', isTesting: false });
+                await AdMob.prepareInterstitial({ adId: 'ca-app-pub-3940256099942544/1033173712', isTesting: true });
             } catch(e) {}
         }
 
@@ -741,12 +756,34 @@
             localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
             localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
 
-            if(auth.currentUser) {
+            if(auth.currentUser && navigator.onLine) {
                 db.collection('users').doc(auth.currentUser.uid).set({
                     name: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
                     xp: xpPoints
                 }, { merge: true }).catch(e => console.log("Cloud sync delayed"));
             }
+        }
+
+        function triggerChatAction() {
+            const chatBox = document.getElementById('chat-input');
+            let msg = chatBox.value.trim().toLowerCase();
+            if(!msg) return;
+            const stream = document.getElementById('chat-stream');
+            stream.innerHTML += `<div class="flex gap-2.5 flex-row-reverse items-start"><div class="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center font-bold text-black flex-shrink-0">S</div><div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-slate-100 shadow-md">${chatBox.value}</div></div>`;
+            chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
+
+            setTimeout(() => {
+                let answer = "I apologize, but my knowledge is currently restricted to English Grammar. Please inquire about topics such as: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', or 'Active Passive'.";
+                let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
+                for(let key of keys) { 
+                    if(msg.includes(key)) { 
+                        answer = aiKnowledge[key]; 
+                        break; 
+                    } 
+                }
+                stream.innerHTML += `<div class="flex gap-2.5 items-start"><div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div><div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 text-xs">${answer}</div></div>`;
+                stream.scrollTop = stream.scrollHeight;
+            }, 600);
         }
 
         function switchTab(tabId) {
@@ -832,31 +869,6 @@
             "direct indirect": "<strong>Speech (Direct and Indirect):</strong><br><br>1. <u>Direct Speech:</u> Quoting the exact words spoken by a person, enclosed in quotation marks. <br><em>Example: He said, \"I am reading a book.\"</em><br>2. <u>Indirect (Reported) Speech:</u> Expressing the content of statements without quoting them explicitly. Changes in tense and pronouns usually occur.<br><em>Example: He said that he was reading a book.</em><br><em>General Rule for Conversion:</em> Convert tenses sequentially backwards.",
             "hello": "Hello! How may I assist you with your English Grammar studies today? You can inquire about any specific topic such as Nouns, Verbs, or Tenses."
         };
-
-        function checkChatEnter(e) { if(e.key === 'Enter') triggerChatAction(); }
-        function triggerChatAction() {
-            const chatBox = document.getElementById('chat-input');
-            let msg = chatBox.value.trim().toLowerCase();
-            if(!msg) return;
-            const stream = document.getElementById('chat-stream');
-            stream.innerHTML += `<div class="flex gap-2.5 flex-row-reverse items-start"><div class="w-8 h-8 rounded-xl bg-purple-500 flex items-center justify-center font-bold text-black flex-shrink-0">S</div><div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-slate-100 shadow-md">${chatBox.value}</div></div>`;
-            chatBox.value = ''; stream.scrollTop = stream.scrollHeight;
-
-            setTimeout(() => {
-                let answer = "I apologize, but my knowledge is currently restricted to English Grammar. Please inquire about topics such as: 'Noun', 'Verb', 'Preposition', 'Simple Past Tense', or 'Active Passive'.";
-                let keys = Object.keys(aiKnowledge).sort((a,b) => b.length - a.length); 
-                for(let key of keys) { 
-                    if(msg.includes(key)) { 
-                        answer = aiKnowledge[key]; 
-                        break; 
-                    } 
-                }
-                stream.innerHTML += `<div class="flex gap-2.5 items-start"><div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0"><i class="fa-solid fa-robot text-sm"></i></div><div class="bg-slate-800/80 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-800 text-slate-300 text-xs">${answer}</div></div>`;
-                stream.scrollTop = stream.scrollHeight;
-            }, 600);
-        }
-        function clearChat() { document.getElementById('chat-stream').innerHTML = ''; }
-
 
         const fullMCQData = [
             {q: "Neither Rahul nor his friends ____ present.", o: ["is", "are", "has", "have been"], c: 1},
@@ -1367,7 +1379,96 @@
         let jumbleWords = [], jumbleAnswer = [];
         let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
 
+        // --- PERFECTED HINT LOGIC (PROPERLY HIDES WRONG BUTTONS) ---
+        function useHint() {
+            if (!navigator.onLine) {
+                checkNetwork();
+                return;
+            }
+            if(remainingHints <= 0) return;
+
+            let hintUsed = false;
+            if(currentGameMode === 'mcq' || currentGameMode === 'match') {
+                let correctAns = (currentGameMode === 'mcq') ? sessionQ[curQIdx].c : sessionQ[curQIdx].a;
+                let btns = document.querySelectorAll('.opt-btn');
+                let wrongBtns = [];
+                btns.forEach((b, i) => {
+                    let isCorrect = (currentGameMode === 'mcq') ? (i === correctAns) : (b.innerText === correctAns);
+                    if(!isCorrect && !b.disabled && !b.classList.contains('hidden')) {
+                        wrongBtns.push(b);
+                    }
+                });
+                
+                wrongBtns.sort(() => 0.5 - Math.random());
+                let toHide = Math.min(2, wrongBtns.length);
+                for(let k = 0; k < toHide; k++) {
+                    wrongBtns[k].classList.add('hidden');
+                    wrongBtns[k].disabled = true;
+                    hintUsed = true;
+                }
+            } else if(currentGameMode === 'jumble') {
+                let correctSentence = sessionQ[curQIdx].split(" ");
+                let nextWordNeeded = correctSentence[jumbleAnswer.length];
+                let wIdx = jumbleWords.findIndex((w, i) => w === nextWordNeeded && !document.getElementById(`j-btn-${i}`).classList.contains('hidden'));
+                if(wIdx !== -1) { clickJumble(nextWordNeeded, wIdx, document.getElementById(`j-btn-${wIdx}`)); hintUsed = true; }
+            } else if(currentGameMode === 'type') {
+                document.getElementById('type-ans-in').value = sessionQ[curQIdx].a; 
+                hintUsed = true;
+            } else if(currentGameMode === 'crossword') {
+                let unfound = cwLevelData.w.find(w => !cwFoundWords.includes(w));
+                if(unfound) { document.getElementById('cw-in').value = unfound; hintUsed = true; }
+            } else if(currentGameMode === 'wordsearch') {
+                let words = wsLevelData.split('|')[1].split(',');
+                let unfound = words.find(w => !wsFoundWords.includes(w));
+                if(unfound) {
+                    let foundPath = null;
+                    let dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[-1,1],[1,-1]];
+                    for(let r=0; r<10 && !foundPath; r++) {
+                        for(let c=0; c<10 && !foundPath; c++) {
+                            if(wsGrid[r][c] === unfound[0]) {
+                                for(let d of dirs) {
+                                    let match = true; let tempPath = [];
+                                    for(let k=0; k<unfound.length; k++) {
+                                        let nr = r + d[0]*k; let nc = c + d[1]*k;
+                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== unfound[k]) { match = false; break; }
+                                        tempPath.push({r: nr, c: nc});
+                                    }
+                                    if(match) { foundPath = tempPath; break; }
+                                }
+                            }
+                        }
+                    }
+                    if(foundPath && foundPath.length > 0) {
+                         let startEl = document.getElementById(`ws-${foundPath[0].r}-${foundPath[0].c}`);
+                         let origColor = startEl.style.color;
+                         startEl.style.color = '#f59e0b'; 
+                         setTimeout(() => startEl.style.color = origColor, 2000);
+                         showArenaAlert(true, `Hint: Look for '${unfound}' starting at highlighted letter!`);
+                         hintUsed = true;
+                    }
+                }
+            }
+
+            if(hintUsed) {
+                remainingHints--;
+                localStorage.setItem('ep_global_hints', remainingHints);
+                document.getElementById('hint-count').innerText = remainingHints;
+                
+                if(remainingHints <= 0) {
+                    let hBtn = document.getElementById('hint-btn');
+                    hBtn.disabled = true;
+                    hBtn.className = "bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-700 transition opacity-50";
+                    hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 opacity-50"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline opacity-50">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300 opacity-50">0</span>`;
+                }
+                refreshDashboardUI();
+            }
+        }
+
         function initGame(mode) {
+            if (!navigator.onLine) {
+                checkNetwork();
+                return;
+            }
             currentGameMode = mode;
             document.getElementById('games-menu').classList.add('hidden');
             document.getElementById('game-arena').classList.remove('hidden');
