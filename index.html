@@ -37,23 +37,9 @@
         /* Loading Spinner */
         .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* PERFECT FULL SCREEN SPLASH - NO CUTS */
-        #custom-splash { 
-            position: fixed; inset: 0; z-index: 99999;
-            background-color: #090A0F;
-            background-image: url('assets/splash.png'); /* Apni image yahan match karein .png ya .jpg */
-            background-size: 100% 100%; /* Stretches to fill entire screen without cutting */
-            background-position: center;
-            background-repeat: no-repeat;
-            transition: opacity 0.6s ease-out; 
-        }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]" onload="initApp()">
-
-    <!-- CUSTOM FULL SCREEN SPLASH -->
-    <div id="custom-splash"></div>
+<body class="text-slate-100 min-h-screen overflow-x-hidden bg-[#090A0F]">
 
     <!-- Toast Notification -->
     <div id="toast-msg" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-[999] transition-opacity duration-300 opacity-0 pointer-events-none">
@@ -298,7 +284,7 @@
                     </div>
 
                     <div class="mt-3 flex gap-2 pt-2 bg-slate-950/20">
-                        <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <input type="text" id="chat-input" onkeypress="checkChatEnter(event)" placeholder="Ask about Noun types, Tenses..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
                         <button onclick="triggerChatAction()" class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center font-bold text-black active:scale-95 transition flex-shrink-0">
                             <i class="fa-solid fa-paper-plane text-sm"></i>
                         </button>
@@ -323,7 +309,7 @@
                             <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex justify-center items-center text-xl"><i class="fa-solid fa-keyboard"></i></div>
                             <div><h3 class="font-bold text-sm">Type Answer</h3><p class="text-[9px] text-slate-400">Fill in blanks</p></div>
                         </div>
-                        <div onclick="initGame('match')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500/20 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
+                        <div onclick="initGame('match')" class="glass-morphic p-4 rounded-2xl border border-slate-800 hover:border-amber-500 cursor-pointer transition active:scale-95 flex flex-col items-center text-center gap-2">
                             <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex justify-center items-center text-xl"><i class="fa-solid fa-link"></i></div>
                             <div><h3 class="font-bold text-sm">Tense Matcher</h3><p class="text-[9px] text-slate-400">All 12 Tenses</p></div>
                         </div>
@@ -340,7 +326,7 @@
                             <div class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex justify-center items-center text-xl"><i class="fa-solid fa-magnifying-glass"></i></div>
                             <div>
                                 <h3 class="font-bold text-sm text-indigo-400">Word Search</h3>
-                                <p class="text-[9px] text-slate-400">Lvl <span id="ws-lvl-badge">1</span></p>
+                                <p class="text-[9px] text-slate-400">Lvl <span id="ws-lvl-badge">1</span>/50</p>
                             </div>
                         </div>
                     </div>
@@ -585,7 +571,7 @@
         
         let pendingRewardType = '';
 
-        // --- BUG-FREE NATIVE ADMOB STABLE LOADING ---
+        // --- BUG-FREE NATIVE ADMOB LOGIC WITH GOOGLE DEMO ADS ---
         async function initAdMob() {
             try {
                 if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) {
@@ -599,7 +585,7 @@
                 setTimeout(async () => {
                     try {
                         await AdMob.showBanner({ 
-                            adId: 'ca-app-pub-3940256099942544/6300978111', 
+                            adId: 'ca-app-pub-3940256099942544/6300978111', /* Google Official Demo Banner ID */
                             adSize: 'BANNER', 
                             position: 'BOTTOM_CENTER', 
                             margin: 80, 
@@ -607,19 +593,19 @@
                         });
                         
                         await AdMob.prepareInterstitial({ 
-                            adId: 'ca-app-pub-3940256099942544/1033173712', 
+                            adId: 'ca-app-pub-3940256099942544/1033173712', /* Google Official Demo Interstitial ID */
                             isTesting: true 
                         });
                         
                         await AdMob.prepareRewardVideoAd({ 
-                            adId: 'ca-app-pub-3940256099942544/5224354917', 
+                            adId: 'ca-app-pub-3940256099942544/5224354917', /* Google Official Demo Rewarded ID */
                             isTesting: true 
                         });
                         
                     } catch(err) {
-                        console.error("Ad Engine Internal load delay:", err);
+                        console.error("Ad Load Failure: ", err);
                     }
-                }, 1000);
+                }, 1500);
 
                 AdMob.addListener('onRewardedVideoAdReward', () => {
                     if (pendingRewardType === 'coins') {
@@ -643,7 +629,7 @@
                     AdMob.prepareRewardVideoAd({ adId: 'ca-app-pub-3940256099942544/5224354917', isTesting: true });
                 });
             } catch (e) { 
-                console.error("AdMob Context Sync Exception: ", e);
+                console.error("Critical AdMob Setup Error: ", e);
             }
         }
 
@@ -660,13 +646,13 @@
             pendingRewardType = rewardType;
             const AdMob = window.Capacitor?.Plugins?.AdMob;
             if (!AdMob) {
-                showToast("Ad placement is caching... Please try again in a moment.", false);
+                showToast("Ads work in mobile app only!", false);
                 return;
             }
             try { 
                 await AdMob.showRewardVideoAd(); 
             } catch(e) { 
-                showToast("Ad request timed out, reloading entry.", false); 
+                showToast("Ad loading, please try again.", false); 
             }
         }
 
@@ -756,7 +742,7 @@
             localStorage.setItem('ep_cw_lvl', cwCurrentLevel);
             localStorage.setItem('ep_ws_lvl', wsCurrentLevel);
 
-            if(auth.currentUser && navigator.onLine) {
+            if(auth.currentUser) {
                 db.collection('users').doc(auth.currentUser.uid).set({
                     name: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
                     xp: xpPoints
@@ -764,6 +750,7 @@
             }
         }
 
+        // --- AI GURU SEND BUTTON PERFECTED ---
         function triggerChatAction() {
             const chatBox = document.getElementById('chat-input');
             let msg = chatBox.value.trim().toLowerCase();
@@ -998,7 +985,7 @@
             {q: "He is popular ___ (with/among) the students.", a: "with"}, {q: "I rely ___ (on/in) you.", a: "on"},
             {q: "She takes pride ___ (in/on) her wealth.", a: "in"}, {q: "He is faithful ___ (to/with) his master.", a: "to"},
             {q: "I am obliged ___ (to/for) you.", a: "to"}, {q: "He succeeded ___ (in/at) the exam.", a: "in"},
-            {q: "She smiled ___ (at/on) him.", a: "at"}, {q: "I warn you ___ (against/about) him.", a: "against"},
+            {q: "She smiles ___ (at/on) him.", a: "at"}, {q: "I warn you ___ (against/about) him.", a: "against"},
             {q: "He was accused ___ (of/for) murder.", a: "of"}, {q: "She is eligible ___ (for/to) the post.", a: "for"},
             {q: "I object ___ (to/against) your remark.", a: "to"}, {q: "He was absorbed ___ (in/with) his studies.", a: "in"},
             {q: "She is familiar ___ (with/to) this place.", a: "with"}, {q: "I was amazed ___ (at/by) his courage.", a: "at"},
@@ -1379,96 +1366,7 @@
         let jumbleWords = [], jumbleAnswer = [];
         let cwLevelData = null, cwFoundWords = [], cwBonusWords = [];
 
-        // --- PERFECTED HINT LOGIC (PROPERLY HIDES WRONG BUTTONS) ---
-        function useHint() {
-            if (!navigator.onLine) {
-                checkNetwork();
-                return;
-            }
-            if(remainingHints <= 0) return;
-
-            let hintUsed = false;
-            if(currentGameMode === 'mcq' || currentGameMode === 'match') {
-                let correctAns = (currentGameMode === 'mcq') ? sessionQ[curQIdx].c : sessionQ[curQIdx].a;
-                let btns = document.querySelectorAll('.opt-btn');
-                let wrongBtns = [];
-                btns.forEach((b, i) => {
-                    let isCorrect = (currentGameMode === 'mcq') ? (i === correctAns) : (b.innerText === correctAns);
-                    if(!isCorrect && !b.disabled && !b.classList.contains('hidden')) {
-                        wrongBtns.push(b);
-                    }
-                });
-                
-                wrongBtns.sort(() => 0.5 - Math.random());
-                let toHide = Math.min(2, wrongBtns.length);
-                for(let k = 0; k < toHide; k++) {
-                    wrongBtns[k].classList.add('hidden');
-                    wrongBtns[k].disabled = true;
-                    hintUsed = true;
-                }
-            } else if(currentGameMode === 'jumble') {
-                let correctSentence = sessionQ[curQIdx].split(" ");
-                let nextWordNeeded = correctSentence[jumbleAnswer.length];
-                let wIdx = jumbleWords.findIndex((w, i) => w === nextWordNeeded && !document.getElementById(`j-btn-${i}`).classList.contains('hidden'));
-                if(wIdx !== -1) { clickJumble(nextWordNeeded, wIdx, document.getElementById(`j-btn-${wIdx}`)); hintUsed = true; }
-            } else if(currentGameMode === 'type') {
-                document.getElementById('type-ans-in').value = sessionQ[curQIdx].a; 
-                hintUsed = true;
-            } else if(currentGameMode === 'crossword') {
-                let unfound = cwLevelData.w.find(w => !cwFoundWords.includes(w));
-                if(unfound) { document.getElementById('cw-in').value = unfound; hintUsed = true; }
-            } else if(currentGameMode === 'wordsearch') {
-                let words = wsLevelData.split('|')[1].split(',');
-                let unfound = words.find(w => !wsFoundWords.includes(w));
-                if(unfound) {
-                    let foundPath = null;
-                    let dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[-1,1],[1,-1]];
-                    for(let r=0; r<10 && !foundPath; r++) {
-                        for(let c=0; c<10 && !foundPath; c++) {
-                            if(wsGrid[r][c] === unfound[0]) {
-                                for(let d of dirs) {
-                                    let match = true; let tempPath = [];
-                                    for(let k=0; k<unfound.length; k++) {
-                                        let nr = r + d[0]*k; let nc = c + d[1]*k;
-                                        if(nr<0 || nr>=10 || nc<0 || nc>=10 || wsGrid[nr][nc] !== unfound[k]) { match = false; break; }
-                                        tempPath.push({r: nr, c: nc});
-                                    }
-                                    if(match) { foundPath = tempPath; break; }
-                                }
-                            }
-                        }
-                    }
-                    if(foundPath && foundPath.length > 0) {
-                         let startEl = document.getElementById(`ws-${foundPath[0].r}-${foundPath[0].c}`);
-                         let origColor = startEl.style.color;
-                         startEl.style.color = '#f59e0b'; 
-                         setTimeout(() => startEl.style.color = origColor, 2000);
-                         showArenaAlert(true, `Hint: Look for '${unfound}' starting at highlighted letter!`);
-                         hintUsed = true;
-                    }
-                }
-            }
-
-            if(hintUsed) {
-                remainingHints--;
-                localStorage.setItem('ep_global_hints', remainingHints);
-                document.getElementById('hint-count').innerText = remainingHints;
-                
-                if(remainingHints <= 0) {
-                    let hBtn = document.getElementById('hint-btn');
-                    hBtn.disabled = true;
-                    hBtn.className = "bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-slate-700 transition opacity-50";
-                    hBtn.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-400 opacity-50"></i><span class="text-[10px] text-amber-400 font-bold uppercase hidden md:inline opacity-50">Hint:</span><span id="hint-count" class="text-xs font-black text-amber-300 opacity-50">0</span>`;
-                }
-                refreshDashboardUI();
-            }
-        }
-
         function initGame(mode) {
-            if (!navigator.onLine) {
-                checkNetwork();
-                return;
-            }
             currentGameMode = mode;
             document.getElementById('games-menu').classList.add('hidden');
             document.getElementById('game-arena').classList.remove('hidden');
@@ -1589,7 +1487,7 @@
                 if(cwBonusWords.length > 0) {
                     setTimeout(() => {
                         let bHtml = "";
-                        cwBonusWords.forEach(bw => { bHtml += `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-amber-300 text-xs font-bold">${bw}</span>`; });
+                        cwBonusWords.forEach(bw => { bHtml += `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-amber-300 text-xs font-bold">${uWord}</span>`; });
                         document.getElementById('cw-bonus-list').innerHTML = bHtml;
                     }, 0);
                 }
